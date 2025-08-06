@@ -1,0 +1,54 @@
+# frozen_string_literal: true
+
+require_relative "fact_graph/data_container"
+require_relative "fact_graph/evaluator"
+require_relative "fact_graph/fact"
+require_relative "fact_graph/input"
+require_relative "fact_graph/version"
+
+module FactGraph
+  class ValidationError < StandardError; end
+
+  class Graph
+    @graph_registry = []
+
+    class << self
+      attr_accessor :graph_registry
+
+      def module_name = self.to_s.underscore.split("/").last.to_sym
+
+      def inherited(subclass)
+        super(subclass)
+        subclass.graph_registry = []
+      end
+
+      def fact(name, &def_proc)
+        superclass.graph_registry << { module_name:, name:, def_proc: }
+      end
+      alias_method :constant, :fact
+
+      def prepare_fact_objects(module_filter = nil)
+        graph = {}
+
+        graph_registry = self.graph_registry
+        if module_filter
+          graph_registry = graph_registry.select do |fact_kwargs|
+            fact_kwargs in { module_name: }
+            module_filter.include? module_name
+          end
+        end
+
+        graph_registry.map do |fact_kwargs|
+          fact_kwargs in { module_name:, name: }
+
+          fact = FactGraph::Fact.new(graph:, **fact_kwargs)
+
+          graph[module_name] ||= {}
+          graph[module_name][name] = fact
+        end
+
+        graph
+      end
+    end
+  end
+end
