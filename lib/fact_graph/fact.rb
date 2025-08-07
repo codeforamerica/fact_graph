@@ -44,7 +44,7 @@ class FactGraph::Fact
   def validate_input(input)
     inputs.each do |input_definition|
       if input_definition.attribute_name
-        if input[input_definition.name].is_a?(Array)  # eventually handle different things that might support attribute_name
+        if input[input_definition.name].is_a?(Array) # eventually handle different things that might support attribute_name
           input[input_definition.name].each_with_index do |input_value, i|
             input_definition.call(input_value[input_definition.attribute_name])
           rescue FactGraph::ValidationError
@@ -72,13 +72,16 @@ class FactGraph::Fact
     return resolver unless resolver.respond_to?(:call)
     return results[module_name][name] if results.has_key?(module_name) && results[module_name].has_key?(name)
 
-    data = FactGraph::DataContainer.new({
-      dependencies: dependency_facts.transform_values { |d| d.call(input, results) },
-      input: input.select { |key, value|
-        # TODO: Figure out a way to make this lookup constant time
-        inputs.any? { |input_definition| input_definition.name == key }
+    data = FactGraph::DataContainer.new(
+      {
+        # TODO: Should dependencies be in module hashes to allow fact name collisions across modules?
+        dependencies: dependency_facts.transform_values { |d| d.call(input, results) },
+        input: input.select { |key, value|
+          # TODO: Figure out a way to make this lookup constant time
+          inputs.any? { |input_definition| input_definition.name == key }
+        }
       }
-    })
+    )
 
     validate_input(data.data[:input])
 

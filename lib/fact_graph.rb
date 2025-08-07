@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "active_support/core_ext/string"
+
 require_relative "fact_graph/data_container"
 require_relative "fact_graph/evaluator"
 require_relative "fact_graph/fact"
