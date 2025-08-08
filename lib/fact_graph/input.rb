@@ -1,15 +1,17 @@
-class FactGraph::Input
-  attr_accessor :name, :attribute_name, :validator
+require 'dry-validation'
 
-  def initialize(name:, attribute_name: nil, validator:)
-    @name = name
-    @attribute_name = attribute_name
-    @validator = validator
-  end
+class FactGraph::Input < Dry::Validation::Contract
+  # attr_accessor :name, :attribute_name, :validator
 
-  def call(val)
-    self.validator.call(val)
-  rescue NoMatchingPatternError
-    raise FactGraph::ValidationError
-  end
+  # def initialize(name:, attribute_name: nil, validator:)
+  #   @name = name
+  #   @attribute_name = attribute_name
+  #   @validator = validator
+  # end
+
+  # def call(val)
+  #   self.validator.call(val)
+  # rescue NoMatchingPatternError
+  #   raise FactGraph::ValidationError
+  # end
 end

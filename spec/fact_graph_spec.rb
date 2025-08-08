@@ -32,9 +32,12 @@ RSpec.describe FactGraph do
         constant(:pi) { 3.14 }
 
         fact :squared_scale do
-          input :scale do |val|
-            val => Numeric
+          input :scale do
+            schema do
+              required(:scale).value(type?: Numeric, gteq?: 0)
+            end
           end
+
           proc do
             data in input: { scale: }
             scale * scale
@@ -46,14 +49,18 @@ RSpec.describe FactGraph do
     let!(:circle_facts) do
       class CircleFacts < FactGraph::Graph
         fact :areas do
-          input :circles, :radius do |val|
-            val => 0..
+          input :circles do
+            schema do
+              required(:circles).array(:hash) do
+                required(:radius).value(:integer)
+              end
+            end
           end
+
           dependency :pi, from: :math_facts
           dependency :squared_scale, from: :math_facts
 
           proc do
-            puts data
             data in input: { circles: }, dependencies: { pi:, squared_scale: }
             circles.map do |circle|
               circle in radius:
@@ -70,13 +77,13 @@ RSpec.describe FactGraph do
         {
           math_facts: {
             squared_scale: {
-              fact_bad_inputs: [{ name: :scale }],
+              fact_bad_inputs: [{ scale: ['must be Numeric'] }],
               fact_dependency_unmet: {}
             }
           },
           circle_facts: {
             areas: {
-              fact_bad_inputs: [{ name: :circles }],
+              fact_bad_inputs: [{ circles: ['must be an array'] }],
               fact_dependency_unmet: {
                 math_facts: [:squared_scale]
               }
@@ -96,13 +103,13 @@ RSpec.describe FactGraph do
         {
           math_facts: {
             squared_scale: {
-              fact_bad_inputs: [{ name: :scale }],
+              fact_bad_inputs: [{ scale: ['must be Numeric'] }],
               fact_dependency_unmet: {}
             }
           },
           circle_facts: {
             areas: {
-              fact_bad_inputs: [{ name: :circles }],
+              fact_bad_inputs: [{ circles: ["must be an array"] }],
               fact_dependency_unmet: {
                 math_facts: [:squared_scale]
               }
@@ -125,7 +132,7 @@ RSpec.describe FactGraph do
           },
           circle_facts: {
             areas: {
-              fact_bad_inputs: [{ name: :circles }],
+              fact_bad_inputs: [{ circles: ["must be an array"] }],
               fact_dependency_unmet: {}
             }
           }
@@ -147,8 +154,12 @@ RSpec.describe FactGraph do
           circle_facts: {
             areas: {
               fact_bad_inputs: [
-                { name: :circles, attribute_name: :radius, index: 0 },
-                { name: :circles, attribute_name: :radius, index: 1 }
+                {
+                  circles: {
+                    0 => { radius: ["must be an integer"] },
+                    1 => { radius: ["is missing"] }
+                  }
+                },
               ],
               fact_dependency_unmet: {}
             }

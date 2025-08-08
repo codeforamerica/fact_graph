@@ -33,37 +33,19 @@ class FactGraph::Fact
     end
   end
 
-  def input(name, attribute_name = nil, &validator)
-    unless block_given?
-      validator = proc { |val| val }
-    end
-
-    inputs << FactGraph::Input.new(name:, attribute_name:, validator:)
+  def input(name, &schema)
+    inputs << { name:, schema: }
   end
 
   def validate_input(input)
     inputs.each do |input_definition|
-      if input_definition.attribute_name
-        if input[input_definition.name].is_a?(Array) # eventually handle different things that might support attribute_name
-          input[input_definition.name].each_with_index do |input_value, i|
-            input_definition.call(input_value[input_definition.attribute_name])
-          rescue FactGraph::ValidationError
-            bad_input = {
-              name: :"#{input_definition.name}",
-              attribute_name: :"#{input_definition.attribute_name}",
-              index: i
-            }
-            errors[:fact_bad_inputs] << bad_input
-          end
-        else
-          errors[:fact_bad_inputs] << { name: :"#{input_definition.name}" }
-        end
+      # XXX: Is this a problem? Having multiple subclasses? Should we cache?
+      defined_input = Class.new(FactGraph::Input).class_exec(&input_definition[:schema])
+      result = defined_input.call("#{input_definition[:name]}": input[input_definition[:name]])
+      if result.success?
+        result.to_h
       else
-        begin
-          input_definition.call(input[input_definition.name])
-        rescue FactGraph::ValidationError
-          errors[:fact_bad_inputs] << { name: :"#{input_definition.name}" }
-        end
+        errors[:fact_bad_inputs] << result.errors.to_h
       end
     end
   end
@@ -78,7 +60,7 @@ class FactGraph::Fact
         dependencies: dependency_facts.transform_values { |d| d.call(input, results) },
         input: input.select { |key, value|
           # TODO: Figure out a way to make this lookup constant time
-          inputs.any? { |input_definition| input_definition.name == key }
+          inputs.any? { |input_definition| input_definition[:name] == key }
         }
       }
     )
