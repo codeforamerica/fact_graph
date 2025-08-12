@@ -57,8 +57,8 @@ class FactGraph::Fact
       {
         # TODO: Should dependencies be in module hashes to allow fact name collisions across modules?
         dependencies: dependency_facts.transform_values { |d| d.call(input, results) },
-        # TODO: Should we filter individual inputs by schema keypaths here to make sure that they don't receive more
-        #       than they need in structured inputs?
+        # TODO: Should we filter structured inputs by schema keypaths here to make sure that they don't receive more
+        #       than they need in structured inputs? Could use Dry::Schema::KeyMap#write to filter out unexpected keys
         input: input.select { |input_name, _| input_schemas.key? input_name }
       }
     )

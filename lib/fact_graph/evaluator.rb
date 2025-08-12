@@ -20,9 +20,9 @@ class FactGraph::Evaluator
   end
 
   def facts_using_input(query_input)
-    graph.values.flat_map do |facts|
-      facts.values.select do |fact|
-        fact.input_schemas.values.any? do |input_schema|
+    graph.flat_map do |_, facts|
+      facts.select do |_, fact|
+        fact.input_schemas.any? do |_, input_schema|
           # This uses a private API of Dry::Schema::KeyMap (#to_dot_notation)
           # Alternatively, it could be implemented with our own recursive traversal
           input_schema.key_map.to_dot_notation.any? do |key_dot_notation|
@@ -31,15 +31,15 @@ class FactGraph::Evaluator
             key_dot_notation.starts_with?(query_input)
           end
         end
-      end
+      end.values
     end
   end
 
   def facts_with_dependency(query_module_name, query_fact_name)
-    graph.values.flat_map do |facts|
-      facts.values.select do |fact|
+    graph.flat_map do |_, facts|
+      facts.select do |_, fact|
         fact.dependencies[query_fact_name] == query_module_name
-      end
+      end.values
     end
   end
 
@@ -47,10 +47,10 @@ class FactGraph::Evaluator
   def leaf_facts_depending_on_input(query_input)
     candidate_facts = facts_using_input(query_input)
     leaf_facts = Set.new
-    while candidate_facts.count > 0
+    while candidate_facts.count.positive?
       candidate_fact = candidate_facts.shift
       facts_depending_on_candidate = facts_with_dependency(candidate_fact.module_name, candidate_fact.name)
-      if facts_depending_on_candidate.count == 0
+      if facts_depending_on_candidate.count.zero?
         leaf_facts << candidate_fact
       else
         candidate_facts.concat(facts_depending_on_candidate)
@@ -60,17 +60,26 @@ class FactGraph::Evaluator
   end
 
   def self.bad_inputs(results)
-    bad_inputs_to_facts = {}
-    results.each do |graph_module, facts|
-      facts.each do |fact_name, result|
-        if result in { fact_bad_inputs:, fact_dependency_unmet: }
-          fact_bad_inputs.each do |bad_input|
-            bad_inputs_to_facts[bad_input] ||= []
-            bad_inputs_to_facts[bad_input] << fact_name
+    errors = {}
+    results.each_value do |facts|
+      facts.each_value do |result|
+        next unless result in { fact_bad_inputs:, fact_dependency_unmet: }
+
+        fact_bad_inputs.each do |bad_input|
+          # each bad input has a hash of keys:[errors], but there should only be one key by convention
+          bad_input.each do |input_name, input_errors|
+            case errors[input_name]
+            when Array
+              errors[input_name].concat(input_errors)
+            when Hash
+              errors[input_name].merge(input_errors)
+            else
+              errors[input_name] = input_errors
+            end
           end
         end
       end
     end
-    bad_inputs_to_facts
+    errors
   end
 end

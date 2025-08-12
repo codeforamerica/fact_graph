@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "test_facts"
 
 RSpec.describe FactGraph::Evaluator do
@@ -117,6 +118,44 @@ RSpec.describe FactGraph::Evaluator do
         expect(results.count).to eq 1
         expect(results[0].module_name).to eq :circle_facts
         expect(results[0].name).to eq :areas
+      end
+    end
+  end
+
+  describe ".bad_inputs" do
+    let(:evaluator) { described_class.new }
+    let!(:evaluation_results) { evaluator.evaluate(input) }
+    let(:results) { FactGraph::Evaluator.bad_inputs(evaluation_results) }
+
+    context "when you evaluate with no input" do
+      let(:input) { {} }
+
+      it "returns all top-level inputs" do
+        expect(results).to eq({ circles: ["must be an array"], scale: ["must be Numeric"] })
+      end
+    end
+
+    context "when you evaluate with some valid input" do
+      let(:input) { { scale: 5 } }
+
+      it "returns only invalid inputs" do
+        expect(results).to eq({ circles: ["must be an array"] })
+      end
+    end
+
+    context "when you evaluate with invalid structured input" do
+      let(:input) { { scale: 5, circles: [{ radius: "boat" }, {}] } }
+
+      it "returns only invalid inputs" do
+        expect(results).to eq({ circles: { 0 => { radius: ["must be an integer"] }, 1 => { radius: ["is missing"] } } })
+      end
+    end
+
+    context "when you evaluate with valid input" do
+      let(:input) { { scale: 5, circles: [{ radius: 1 }, { radius: 2 }] } }
+
+      it "returns an empty hash" do
+        expect(results).to eq({})
       end
     end
   end
