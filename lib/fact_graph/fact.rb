@@ -1,11 +1,11 @@
 class FactGraph::Fact
-  attr_accessor :name, :module_name, :resolver, :dependencies, :inputs, :graph, :errors
+  attr_accessor :name, :module_name, :resolver, :dependencies, :input_schemas, :graph, :errors
 
   def initialize(name:, module_name:, graph:, def_proc:)
     @name = name
     @module_name = module_name
     @dependencies = {}
-    @inputs = []
+    @input_schemas = {}
     @graph = graph
     @errors = {
       fact_bad_inputs: [],
@@ -34,14 +34,13 @@ class FactGraph::Fact
   end
 
   def input(name, &schema)
-    inputs << { name:, schema: }
+    input_schemas[name] = Class.new(FactGraph::Input).class_exec(&schema)
   end
 
   def validate_input(input)
-    inputs.each do |input_definition|
+    input_schemas.each do |input_name, input_schema|
       # XXX: Is this a problem? Having multiple subclasses? Should we cache?
-      defined_input = Class.new(FactGraph::Input).class_exec(&input_definition[:schema])
-      result = defined_input.call("#{input_definition[:name]}": input[input_definition[:name]])
+      result = input_schema.call("#{input_name}": input[input_name])
       if result.success?
         result.to_h
       else
@@ -58,10 +57,9 @@ class FactGraph::Fact
       {
         # TODO: Should dependencies be in module hashes to allow fact name collisions across modules?
         dependencies: dependency_facts.transform_values { |d| d.call(input, results) },
-        input: input.select { |key, value|
-          # TODO: Figure out a way to make this lookup constant time
-          inputs.any? { |input_definition| input_definition[:name] == key }
-        }
+        # TODO: Should we filter individual inputs by schema keypaths here to make sure that they don't receive more
+        #       than they need in structured inputs?
+        input: input.select { |input_name, _| input_schemas.key? input_name }
       }
     )
 

@@ -27,54 +27,9 @@ RSpec.describe FactGraph do
   end
 
   context "with facts defined" do
+
     before do
-      stub_const(
-        "MathFacts",
-
-        class MathFacts < FactGraph::Graph
-          constant(:pi) { 3.14 }
-
-          fact :squared_scale do
-            input :scale do
-              schema do
-                required(:scale).value(type?: Numeric, gteq?: 0)
-              end
-            end
-
-            proc do
-              data in input: { scale: }
-              scale * scale
-            end
-          end
-        end
-      )
-
-      stub_const(
-        "CircleFacts",
-
-        class CircleFacts < FactGraph::Graph
-          fact :areas do
-            input :circles do
-              schema do
-                required(:circles).array(:hash) do
-                  required(:radius).value(:integer)
-                end
-              end
-            end
-
-            dependency :pi, from: :math_facts
-            dependency :squared_scale, from: :math_facts
-
-            proc do
-              data in input: { circles: }, dependencies: { pi:, squared_scale: }
-              circles.map do |circle|
-                circle in radius:
-                pi * radius * radius * squared_scale
-              end
-            end
-          end
-        end
-      )
+      require "test_facts"
     end
 
     context "with no input" do

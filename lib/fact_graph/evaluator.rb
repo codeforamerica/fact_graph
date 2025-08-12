@@ -1,3 +1,5 @@
+require "active_support/core_ext/string"
+
 class FactGraph::Evaluator
   attr_accessor :graph
 
@@ -19,11 +21,17 @@ class FactGraph::Evaluator
 
   def facts_using_input(query_input)
     graph.values.flat_map do |facts|
-      facts.select do |fact_name, fact|
-        fact.inputs.any? do |fact_input|
-          fact_input.name == query_input[:name] && fact_input.attribute_name == query_input[:attribute_name]
+      facts.values.select do |fact|
+        fact.input_schemas.values.any? do |input_schema|
+          # This uses a private API of Dry::Schema::KeyMap (#to_dot_notation)
+          # Alternatively, it could be implemented with our own recursive traversal
+          input_schema.key_map.to_dot_notation.any? do |key_dot_notation|
+            # HACK: We use #starts_with? here to support querying for part of the key path, but it allows for bugs if
+            #       one input's name is actually a substring of another's
+            key_dot_notation.starts_with?(query_input)
+          end
         end
-      end.values
+      end
     end
   end
 
@@ -48,7 +56,7 @@ class FactGraph::Evaluator
         candidate_facts.concat(facts_depending_on_candidate)
       end
     end
-    leaf_facts
+    leaf_facts.to_a
   end
 
   def self.bad_inputs(results)
