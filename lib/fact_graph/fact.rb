@@ -44,7 +44,9 @@ class FactGraph::Fact
       if result.success?
         result.to_h
       else
-        errors[:fact_bad_inputs] << result.errors.to_h
+        result.errors.each do |error|
+          errors[:fact_bad_inputs] << [error.path, error.text]
+        end
       end
     end
   end

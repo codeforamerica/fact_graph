@@ -1,14 +1,18 @@
 # frozen_string_literal: true
-
-require "test_facts"
-
+#
 RSpec.describe FactGraph::Evaluator do
+
+  before do
+    FactGraph::Graph.graph_registry = []
+    load "spec/test_facts.rb"
+  end
+
   describe "#facts_using_input" do
     let(:evaluator) { described_class.new }
     let(:results) { evaluator.facts_using_input(query_input) }
 
     context "when you query for an unused input" do
-      let(:query_input) { "foo" }
+      let(:query_input) { [:foo] }
 
       it "returns an empty array" do
         expect(results).to eq []
@@ -16,7 +20,7 @@ RSpec.describe FactGraph::Evaluator do
     end
 
     context "when you query for a top-level simple input" do
-      let(:query_input) { "scale" }
+      let(:query_input) { [:scale] }
 
       it "returns the correct set of facts" do
         expect(results.count).to eq 1
@@ -26,7 +30,7 @@ RSpec.describe FactGraph::Evaluator do
     end
 
     context "when you query for a sub-path of a structured input" do
-      let(:query_input) { "circles" }
+      let(:query_input) { [:circles] }
 
       it "returns the correct set of facts" do
         expect(results.count).to eq 1
@@ -36,7 +40,7 @@ RSpec.describe FactGraph::Evaluator do
     end
 
     context "when you query for a fully-qualified structured input" do
-      let(:query_input) { "circles[].radius" }
+      let(:query_input) { [:circles, 0, :radius] }
 
       it "returns the correct set of facts" do
         expect(results.count).to eq 1
@@ -94,7 +98,7 @@ RSpec.describe FactGraph::Evaluator do
     let(:results) { evaluator.leaf_facts_depending_on_input(query_input) }
 
     context "when you query for an unused input" do
-      let(:query_input) { "foo" }
+      let(:query_input) { [:foo] }
 
       it "returns an empty array" do
         expect(results).to eq []
@@ -102,7 +106,7 @@ RSpec.describe FactGraph::Evaluator do
     end
 
     context "when you query for an input used directly by a leaf fact" do
-      let(:query_input) { "circles[].radius" }
+      let(:query_input) { [:circles, 0, :radius] }
 
       it "returns that fact" do
         expect(results.count).to eq 1
@@ -112,7 +116,7 @@ RSpec.describe FactGraph::Evaluator do
     end
 
     context "when you query for an input used transitively by a leaf fact" do
-      let(:query_input) { "scale" }
+      let(:query_input) { [:scale] }
 
       it "returns that fact" do
         expect(results.count).to eq 1
@@ -122,16 +126,19 @@ RSpec.describe FactGraph::Evaluator do
     end
   end
 
-  describe ".bad_inputs" do
+  describe ".input_errors" do
     let(:evaluator) { described_class.new }
     let!(:evaluation_results) { evaluator.evaluate(input) }
-    let(:results) { FactGraph::Evaluator.bad_inputs(evaluation_results) }
+    let(:results) { FactGraph::Evaluator.input_errors(evaluation_results) }
 
     context "when you evaluate with no input" do
       let(:input) { {} }
 
       it "returns all top-level inputs" do
-        expect(results).to eq({ circles: ["must be an array"], scale: ["must be Numeric"] })
+        expect(results).to eq({
+                                [:circles] => ["must be an array"],
+                                [:scale] => ["must be Numeric"]
+                              })
       end
     end
 
@@ -139,7 +146,7 @@ RSpec.describe FactGraph::Evaluator do
       let(:input) { { scale: 5 } }
 
       it "returns only invalid inputs" do
-        expect(results).to eq({ circles: ["must be an array"] })
+        expect(results).to eq({ [:circles] => ["must be an array"] })
       end
     end
 
@@ -147,7 +154,10 @@ RSpec.describe FactGraph::Evaluator do
       let(:input) { { scale: 5, circles: [{ radius: "boat" }, {}] } }
 
       it "returns only invalid inputs" do
-        expect(results).to eq({ circles: { 0 => { radius: ["must be an integer"] }, 1 => { radius: ["is missing"] } } })
+        expect(results).to eq({
+                                [:circles, 0, :radius] => ["must be an integer"],
+                                [:circles, 1, :radius] => ["is missing"]
+                              })
       end
     end
 
