@@ -41,17 +41,17 @@ RSpec.describe FactGraph do
         {
           math_facts: {
             squared_scale: {
-              fact_bad_inputs: [
-                [[:scale], "must be Numeric"]
-              ],
+              fact_bad_inputs: {
+                [:scale] => Set.new(["must be Numeric"])
+              },
               fact_dependency_unmet: {}
             }
           },
           circle_facts: {
             areas: {
-              fact_bad_inputs: [
-                [[:circles], "must be an array"]
-              ],
+              fact_bad_inputs: {
+                [:circles] => Set.new(["must be an array"])
+              },
               fact_dependency_unmet: {
                 math_facts: [:squared_scale]
               }
@@ -71,17 +71,17 @@ RSpec.describe FactGraph do
         {
           math_facts: {
             squared_scale: {
-              fact_bad_inputs: [
-                [[:scale], "must be Numeric"]
-              ],
+              fact_bad_inputs: {
+                [:scale] => Set.new(["must be Numeric"])
+              },
               fact_dependency_unmet: {}
             }
           },
           circle_facts: {
             areas: {
-              fact_bad_inputs: [
-                [[:circles], "must be an array"]
-              ],
+              fact_bad_inputs: {
+                [:circles] => Set.new(["must be an array"])
+              },
               fact_dependency_unmet: {
                 math_facts: [:squared_scale]
               }
@@ -104,9 +104,9 @@ RSpec.describe FactGraph do
           },
           circle_facts: {
             areas: {
-              fact_bad_inputs: [
-                [[:circles], "must be an array"]
-              ],
+              fact_bad_inputs: {
+                [:circles] => Set.new(["must be an array"])
+              },
               fact_dependency_unmet: {}
             }
           }
@@ -127,10 +127,10 @@ RSpec.describe FactGraph do
           },
           circle_facts: {
             areas: {
-              fact_bad_inputs: [
-                [[:circles, 0, :radius], "must be an integer"],
-                [[:circles, 1, :radius], "is missing"]
-              ],
+              fact_bad_inputs: {
+                [:circles, 0, :radius] => Set.new(["must be an integer"]),
+                [:circles, 1, :radius] => Set.new(["is missing"])
+              },
               fact_dependency_unmet: {}
             }
           }

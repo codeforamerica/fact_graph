@@ -136,8 +136,8 @@ RSpec.describe FactGraph::Evaluator do
 
       it "returns all top-level inputs" do
         expect(results).to eq({
-                                [:circles] => ["must be an array"],
-                                [:scale] => ["must be Numeric"]
+                                [:circles] => Set.new(["must be an array"]),
+                                [:scale] => Set.new(["must be Numeric"])
                               })
       end
     end
@@ -146,7 +146,7 @@ RSpec.describe FactGraph::Evaluator do
       let(:input) { { scale: 5 } }
 
       it "returns only invalid inputs" do
-        expect(results).to eq({ [:circles] => ["must be an array"] })
+        expect(results).to eq({ [:circles] => Set.new(["must be an array"]) })
       end
     end
 
@@ -155,8 +155,8 @@ RSpec.describe FactGraph::Evaluator do
 
       it "returns only invalid inputs" do
         expect(results).to eq({
-                                [:circles, 0, :radius] => ["must be an integer"],
-                                [:circles, 1, :radius] => ["is missing"]
+                                [:circles, 0, :radius] => Set.new(["must be an integer"]),
+                                [:circles, 1, :radius] => Set.new(["is missing"])
                               })
       end
     end

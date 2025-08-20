@@ -91,13 +91,11 @@ class FactGraph::Evaluator
       facts.each_value do |result|
         next unless result in { fact_bad_inputs: }
 
-        fact_bad_inputs.each do |bad_input|
-          bad_input in input_path, error_message
-          errors[input_path] ||= Set.new
-          errors[input_path].add(error_message)
+        errors.merge!(fact_bad_inputs) do |_bad_input_key_path, old_error_messages, new_error_messages|
+          old_error_messages.merge(new_error_messages)
         end
       end
     end
-    errors.transform_values { |v| v.to_a }
+    errors
   end
 end

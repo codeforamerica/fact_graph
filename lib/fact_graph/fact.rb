@@ -8,7 +8,7 @@ class FactGraph::Fact
     @input_schemas = {}
     @graph = graph
     @errors = {
-      fact_bad_inputs: [],
+      fact_bad_inputs: {},
       fact_dependency_unmet: Hash.new { |h, key| h[key] = [] }
     }
 
@@ -34,18 +34,19 @@ class FactGraph::Fact
   end
 
   def input(name, &schema)
+    # XXX: Is this a problem? Having multiple subclasses? Should we cache?
     input_schemas[name] = Class.new(FactGraph::Input).class_exec(&schema)
   end
 
   def validate_input(input)
     input_schemas.each do |input_name, input_schema|
-      # XXX: Is this a problem? Having multiple subclasses? Should we cache?
       result = input_schema.call("#{input_name}": input[input_name])
       if result.success?
         result.to_h
       else
         result.errors.each do |error|
-          errors[:fact_bad_inputs] << [error.path, error.text]
+          errors[:fact_bad_inputs][error.path] ||= Set.new
+          errors[:fact_bad_inputs][error.path].add(error.text)
         end
       end
     end
