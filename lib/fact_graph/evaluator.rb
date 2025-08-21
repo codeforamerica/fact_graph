@@ -53,9 +53,7 @@ class FactGraph::Evaluator
     graph.flat_map do |_, facts|
       facts.select do |_, fact|
         fact.input_schemas.any? do |_, input_schema|
-          input_schema.key_map.any? do |key|
-            key_matches_key_path?(key, query_input)
-          end
+          key_matches_key_path?(input_schema.key_map, query_input)
         end
       end.values
     end
