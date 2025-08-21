@@ -4,7 +4,7 @@ RSpec.describe FactGraph::Evaluator do
 
   before do
     FactGraph::Graph.graph_registry = []
-    load "spec/test_facts.rb"
+    load "spec/fixtures/math.rb"
   end
 
   describe "#facts_using_input" do

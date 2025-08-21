@@ -32,7 +32,7 @@ RSpec.describe FactGraph do
 
   context "with facts defined" do
     before do
-      load "spec/test_facts.rb"
+      load "spec/fixtures/math.rb"
     end
 
     context "with no input" do

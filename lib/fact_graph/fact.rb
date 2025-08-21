@@ -38,12 +38,21 @@ class FactGraph::Fact
     input_schemas[name] = Class.new(FactGraph::Input).class_exec(&schema)
   end
 
+  def filter_input(input)
+    # Filter out unused inputs
+    required_inputs = input.select { |input_name, _| input_schemas.key? input_name }
+
+    # Filter structured input down to only include keys that we require
+    required_inputs.to_h do |input_name, _|
+      # We expect to have at most one schema for any key in the input hash, so we don't try to merge filtered values
+      [input_name, input_schemas[input_name].key_map.write(input)[input_name]]
+    end
+  end
+
   def validate_input(input)
     input_schemas.each do |input_name, input_schema|
       result = input_schema.call("#{input_name}": input[input_name])
-      if result.success?
-        result.to_h
-      else
+      if result.failure?
         result.errors.each do |error|
           errors[:fact_bad_inputs][error.path] ||= Set.new
           errors[:fact_bad_inputs][error.path].add(error.text)
@@ -54,15 +63,13 @@ class FactGraph::Fact
 
   def call(input, results)
     return resolver unless resolver.respond_to?(:call)
-    return results[module_name][name] if results.has_key?(module_name) && results[module_name].has_key?(name)
+    return results[module_name][name] if results.key?(module_name) && results[module_name].key?(name)
 
     data = FactGraph::DataContainer.new(
       {
         # TODO: Should dependencies be in module hashes to allow fact name collisions across modules?
         dependencies: dependency_facts.transform_values { |d| d.call(input, results) },
-        # TODO: Should we filter structured inputs by schema keypaths here to make sure that they don't receive more
-        #       than they need in structured inputs? Could use Dry::Schema::KeyMap#write to filter out unexpected keys
-        input: input.select { |input_name, _| input_schemas.key? input_name }
+        input: filter_input(input)
       }
     )
 
