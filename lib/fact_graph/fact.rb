@@ -1,14 +1,14 @@
 class FactGraph::Fact
-  attr_accessor :name, :module_name, :resolver, :dependencies, :inputs, :graph, :errors
+  attr_accessor :name, :module_name, :resolver, :dependencies, :input_schemas, :graph, :errors
 
   def initialize(name:, module_name:, graph:, def_proc:)
     @name = name
     @module_name = module_name
     @dependencies = {}
-    @inputs = []
+    @input_schemas = {}
     @graph = graph
     @errors = {
-      fact_bad_inputs: [],
+      fact_bad_inputs: {},
       fact_dependency_unmet: Hash.new { |h, key| h[key] = [] }
     }
 
@@ -34,34 +34,42 @@ class FactGraph::Fact
   end
 
   def input(name, &schema)
-    inputs << { name:, schema: }
+    # XXX: Is this a problem? Having multiple subclasses? Should we cache?
+    input_schemas[name] = Class.new(FactGraph::Input).class_exec(&schema)
+  end
+
+  def filter_input(input)
+    # Filter out unused inputs
+    required_inputs = input.select { |input_name, _| input_schemas.key? input_name }
+
+    # Filter structured input down to only include keys that we require
+    required_inputs.to_h do |input_name, _|
+      # We expect to have at most one schema for any key in the input hash, so we don't try to merge filtered values
+      [input_name, input_schemas[input_name].key_map.write(input)[input_name]]
+    end
   end
 
   def validate_input(input)
-    inputs.each do |input_definition|
-      # XXX: Is this a problem? Having multiple subclasses? Should we cache?
-      defined_input = Class.new(FactGraph::Input).class_exec(&input_definition[:schema])
-      result = defined_input.call("#{input_definition[:name]}": input[input_definition[:name]])
-      if result.success?
-        result.to_h
-      else
-        errors[:fact_bad_inputs] << result.errors.to_h
+    input_schemas.each do |input_name, input_schema|
+      result = input_schema.call("#{input_name}": input[input_name])
+      if result.failure?
+        result.errors.each do |error|
+          errors[:fact_bad_inputs][error.path] ||= Set.new
+          errors[:fact_bad_inputs][error.path].add(error.text)
+        end
       end
     end
   end
 
   def call(input, results)
     return resolver unless resolver.respond_to?(:call)
-    return results[module_name][name] if results.has_key?(module_name) && results[module_name].has_key?(name)
+    return results[module_name][name] if results.key?(module_name) && results[module_name].key?(name)
 
     data = FactGraph::DataContainer.new(
       {
         # TODO: Should dependencies be in module hashes to allow fact name collisions across modules?
         dependencies: dependency_facts.transform_values { |d| d.call(input, results) },
-        input: input.select { |key, value|
-          # TODO: Figure out a way to make this lookup constant time
-          inputs.any? { |input_definition| input_definition[:name] == key }
-        }
+        input: filter_input(input)
       }
     )
 
