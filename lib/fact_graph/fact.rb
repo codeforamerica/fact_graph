@@ -24,12 +24,11 @@ class FactGraph::Fact
   end
 
   def dependency_facts
-    dependencies.reduce({}) do |result_hash, values|
+    dependencies.each_with_object({}) do |values, result_hash|
       fact_name, module_name = values
       fact = graph[module_name][fact_name]
       raise "#{name}: could not find dependency #{fact_name} in module #{module_name}" if fact.nil?
       result_hash[fact_name] = fact
-      result_hash
     end
   end
 
@@ -77,7 +76,7 @@ class FactGraph::Fact
 
     data.data[:dependencies].each do |key, dependency|
       case dependency
-      in { fact_dependency_unmet: Hash } | { fact_bad_inputs: Array }
+      in {fact_dependency_unmet: Hash} | {fact_bad_inputs: Array}
         bad_module = dependency_facts[key].module_name
         errors[:fact_dependency_unmet][bad_module] << key
       else
@@ -93,7 +92,7 @@ class FactGraph::Fact
 
     begin
       results[module_name][name] = data.instance_exec(&resolver)
-      return results[module_name][name]
+      results[module_name][name]
     end
   end
 end

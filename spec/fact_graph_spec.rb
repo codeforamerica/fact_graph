@@ -22,7 +22,7 @@ RSpec.describe FactGraph do
     end
 
     context "with some input" do
-      let(:input) { { foo: :bar } }
+      let(:input) { {foo: :bar} }
 
       it "returns an empty result" do
         expect(results).to eq({})
@@ -66,7 +66,7 @@ RSpec.describe FactGraph do
     end
 
     context "with some invalid input and some missing input" do
-      let(:input) { { scale: "boat" } }
+      let(:input) { {scale: "boat"} }
       let(:expected_result) do
         {
           math_facts: {
@@ -96,7 +96,7 @@ RSpec.describe FactGraph do
     end
 
     context "with some valid and some bad input" do
-      let(:input) { { scale: 5 } }
+      let(:input) { {scale: 5} }
       let(:expected_result) do
         {
           math_facts: {
@@ -119,7 +119,7 @@ RSpec.describe FactGraph do
     end
 
     context "with invalid nested repeated input" do
-      let(:input) { { scale: 5, circles: [{ radius: "spoon" }, {}] } }
+      let(:input) { {scale: 5, circles: [{radius: "spoon"}, {}]} }
       let(:expected_result) do
         {
           math_facts: {
@@ -143,7 +143,7 @@ RSpec.describe FactGraph do
     end
 
     context "with all valid input" do
-      let(:input) { { scale: 5, circles: [{ radius: 1 }, { radius: 2 }] } }
+      let(:input) { {scale: 5, circles: [{radius: 1}, {radius: 2}]} }
       let(:expected_result) do
         {
           math_facts: {

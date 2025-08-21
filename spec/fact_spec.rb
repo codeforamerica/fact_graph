@@ -1,7 +1,6 @@
 # frozen_string_literal: true
-#
-RSpec.describe FactGraph::Fact do
 
+RSpec.describe FactGraph::Fact do
   before do
     FactGraph::Graph.graph_registry = []
     load "spec/fixtures/contact_info.rb"
@@ -33,10 +32,10 @@ RSpec.describe FactGraph::Fact do
               state: "New York",
               zip_code: "10123"
             }
-          })
+          }
+        )
         evaluator.evaluate(input)
       end
     end
   end
-
 end

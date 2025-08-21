@@ -13,7 +13,7 @@ class ContactInfo < FactGraph::Graph
     end
 
     proc do
-      data in input: { street_address: { street_number:, street_name:, city:, state:, zip_code: } }
+      data in input: {street_address: {street_number:, street_name:, city:, state:, zip_code:}}
 
       "#{street_number} #{street_name}, #{city}, #{state} #{zip_code}"
     end
