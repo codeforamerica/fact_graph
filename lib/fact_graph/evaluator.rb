@@ -20,7 +20,7 @@ class FactGraph::Evaluator
   end
 
   def key_matches_key_path?(key, key_path)
-    return false unless key_path.is_a?(Array) && key_path.count > 0
+    return false unless key_path.is_a?(Array) && key_path.count.positive?
 
     case key
     when Dry::Schema::KeyMap
@@ -29,21 +29,15 @@ class FactGraph::Evaluator
       end
     when Dry::Schema::Key::Array
       match = key.name == key_path[0]
-      if key_path.count > 1
-        match &&= key_path[1].is_a?(Integer)
-      end
-      if key_path.count > 2
-        match &&= key_matches_key_path?(key.member, key_path[2..])
-      end
+      match &&= key_path[1].is_a?(Integer) if key_path.count > 1
+      match &&= key_matches_key_path?(key.member, key_path[2..]) if key_path.count > 2
       match
     when Dry::Schema::Key::Hash
       match = key.name == key_path[0]
-      if key_path.count > 1
-        match &&= key_path.members.any? { |member| key_matches_key_path?(member, key_path[2..]) }
-      end
+      match &&= key_matches_key_path?(key.members, key_path[1..]) if key_path.count > 1
       match
     when Dry::Schema::Key
-      return key.name == key_path[0] && key_path.count == 1
+      key.name == key_path[0] && key_path.count == 1
     else
       false
     end

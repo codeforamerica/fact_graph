@@ -7,6 +7,30 @@ RSpec.describe FactGraph::Evaluator do
     load "spec/fixtures/math.rb"
   end
 
+  describe "#key_matches_key_path" do
+    let(:evaluator) { described_class.new }
+
+    context "when passed a key that includes keymaps, hashes and arrays" do
+      let(:key) { Dry::Schema::KeyMap[:title, :artist, [:tags, [:name]]] }
+
+      it "returns true for a matching simple key path" do
+        expect(evaluator.key_matches_key_path?(key, [:title])).to be_truthy
+      end
+
+      it "returns true for a matching complex key path" do
+        expect(evaluator.key_matches_key_path?(key, [:tags, 0, :name])).to be_truthy
+      end
+
+      it "returns false for a non-matching simple key path" do
+        expect(evaluator.key_matches_key_path?(key, [:release_year])).to be_falsey
+      end
+
+      it "returns false for a non-matching complex key path" do
+        expect(evaluator.key_matches_key_path?(key, [:tags, 0, :creator])).to be_falsey
+      end
+    end
+  end
+
   describe "#facts_using_input" do
     let(:evaluator) { described_class.new }
     let(:results) { evaluator.facts_using_input(query_input) }
