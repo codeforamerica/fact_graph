@@ -1,1 +1,3 @@
-FactGraph::DataContainer = Struct.new(:data)
+module FactGraph
+  DataContainer = Struct.new(:data)
+end
