@@ -1,7 +1,6 @@
 # frozen_string_literal: true
-#
-RSpec.describe FactGraph::Evaluator do
 
+RSpec.describe FactGraph::Evaluator do
   before do
     FactGraph::Graph.graph_registry = []
     load "spec/fixtures/math.rb"
@@ -160,33 +159,33 @@ RSpec.describe FactGraph::Evaluator do
 
       it "returns all top-level inputs" do
         expect(results).to eq({
-                                [:circles] => Set.new(["must be an array"]),
-                                [:scale] => Set.new(["must be Numeric"])
-                              })
+          [:circles] => Set.new(["must be an array"]),
+          [:scale] => Set.new(["must be Numeric"])
+        })
       end
     end
 
     context "when you evaluate with some valid input" do
-      let(:input) { { scale: 5 } }
+      let(:input) { {scale: 5} }
 
       it "returns only invalid inputs" do
-        expect(results).to eq({ [:circles] => Set.new(["must be an array"]) })
+        expect(results).to eq({[:circles] => Set.new(["must be an array"])})
       end
     end
 
     context "when you evaluate with invalid structured input" do
-      let(:input) { { scale: 5, circles: [{ radius: "boat" }, {}] } }
+      let(:input) { {scale: 5, circles: [{radius: "boat"}, {}]} }
 
       it "returns only invalid inputs" do
         expect(results).to eq({
-                                [:circles, 0, :radius] => Set.new(["must be an integer"]),
-                                [:circles, 1, :radius] => Set.new(["is missing"])
-                              })
+          [:circles, 0, :radius] => Set.new(["must be an integer"]),
+          [:circles, 1, :radius] => Set.new(["is missing"])
+        })
       end
     end
 
     context "when you evaluate with valid input" do
-      let(:input) { { scale: 5, circles: [{ radius: 1 }, { radius: 2 }] } }
+      let(:input) { {scale: 5, circles: [{radius: 1}, {radius: 2}]} }
 
       it "returns an empty hash" do
         expect(results).to eq({})

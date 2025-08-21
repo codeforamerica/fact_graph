@@ -81,7 +81,7 @@ class FactGraph::Evaluator
     errors = {}
     results.each_value do |facts|
       facts.each_value do |result|
-        next unless result in { fact_bad_inputs: }
+        next unless result in {fact_bad_inputs:}
 
         errors.merge!(fact_bad_inputs) do |_bad_input_key_path, old_error_messages, new_error_messages|
           old_error_messages.merge(new_error_messages)

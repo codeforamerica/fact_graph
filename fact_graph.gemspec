@@ -38,7 +38,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "activesupport", "~> 8.0"
   spec.add_dependency "dry-validation", "~> 1.7"
 
-  spec.add_development_dependency 'debug'
+  spec.add_development_dependency "debug"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

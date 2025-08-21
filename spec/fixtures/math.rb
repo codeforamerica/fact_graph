@@ -13,7 +13,7 @@ class MathFacts < FactGraph::Graph
     end
 
     proc do
-      data in input: { scale: }
+      data in input: {scale:}
       scale * scale
     end
   end
@@ -34,7 +34,7 @@ class CircleFacts < FactGraph::Graph
     dependency :squared_scale, from: :math_facts
 
     proc do
-      data in input: { circles: }, dependencies: { pi:, squared_scale: }
+      data in input: {circles:}, dependencies: {pi:, squared_scale:}
       circles.map do |circle|
         circle in radius:
         pi * radius * radius * squared_scale

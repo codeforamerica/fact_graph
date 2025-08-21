@@ -17,15 +17,15 @@ module FactGraph
     class << self
       attr_accessor :graph_registry
 
-      def module_name = self.to_s.underscore.split("/").last.to_sym
+      def module_name = to_s.underscore.split("/").last.to_sym
 
       def inherited(subclass)
-        super(subclass)
+        super
         subclass.graph_registry = []
       end
 
       def fact(name, &def_proc)
-        superclass.graph_registry << { module_name:, name:, def_proc: }
+        superclass.graph_registry << {module_name:, name:, def_proc:}
       end
       alias_method :constant, :fact
 
@@ -35,13 +35,13 @@ module FactGraph
         graph_registry = self.graph_registry
         if module_filter
           graph_registry = graph_registry.select do |fact_kwargs|
-            fact_kwargs in { module_name: }
+            fact_kwargs in {module_name:}
             module_filter.include? module_name
           end
         end
 
         graph_registry.map do |fact_kwargs|
-          fact_kwargs in { module_name:, name: }
+          fact_kwargs in {module_name:, name:}
 
           fact = FactGraph::Fact.new(graph:, **fact_kwargs)
 
