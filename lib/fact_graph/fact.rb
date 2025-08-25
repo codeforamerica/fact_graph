@@ -1,5 +1,5 @@
 class FactGraph::Fact
-  attr_accessor :name, :module_name, :resolver, :dependencies, :input_schemas, :graph, :errors
+  attr_accessor :name, :module_name, :resolver, :dependencies, :input_schemas, :graph
 
   def initialize(name:, module_name:, graph:, def_proc:)
     @name = name
@@ -7,10 +7,6 @@ class FactGraph::Fact
     @dependencies = {}
     @input_schemas = {}
     @graph = graph
-    @errors = {
-      fact_bad_inputs: {},
-      fact_dependency_unmet: Hash.new { |h, key| h[key] = [] }
-    }
 
     @resolver = instance_eval(&def_proc)
   end
@@ -48,7 +44,7 @@ class FactGraph::Fact
     end
   end
 
-  def validate_input(input)
+  def validate_input(input, errors)
     input_schemas.each do |input_name, input_schema|
       result = input_schema.call("#{input_name}": input[input_name])
       if result.failure?
@@ -72,7 +68,12 @@ class FactGraph::Fact
       }
     )
 
-    validate_input(data.data[:input])
+    errors = {
+      fact_bad_inputs: {},
+      fact_dependency_unmet: Hash.new { |h, key| h[key] = [] }
+    }
+
+    validate_input(data.data[:input], errors)
 
     data.data[:dependencies].each do |key, dependency|
       case dependency

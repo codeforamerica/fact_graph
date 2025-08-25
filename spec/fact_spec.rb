@@ -32,7 +32,8 @@ RSpec.describe FactGraph::Fact do
               state: "New York",
               zip_code: "10123"
             }
-          }
+          },
+          { fact_bad_inputs: {}, fact_dependency_unmet: {} }
         )
         evaluator.evaluate(input)
       end
