@@ -1,12 +1,13 @@
 class FactGraph::Fact
-  attr_accessor :name, :module_name, :resolver, :dependencies, :input_schemas, :graph
+  attr_accessor :name, :module_name, :resolver, :dependencies, :input_schemas, :graph, :allow_unmet_dependencies
 
-  def initialize(name:, module_name:, graph:, def_proc:)
+  def initialize(name:, module_name:, graph:, def_proc:, allow_unmet_dependencies: false)
     @name = name
     @module_name = module_name
     @dependencies = {}
     @input_schemas = {}
     @graph = graph
+    @allow_unmet_dependencies = allow_unmet_dependencies
 
     @resolver = instance_eval(&def_proc)
   end
@@ -86,14 +87,24 @@ class FactGraph::Fact
 
     results[module_name] ||= {}
 
-    if errors[:fact_dependency_unmet].values.any? || errors[:fact_bad_inputs].any?
-      results[module_name][name] = errors
-      return results[module_name][name]
+    # NOTE: This closes over both errors, which is defined in the
+    # scope of this method. Refactoring would require moving this context
+    # somewhere reusable. Be prepared if you decide to do so
+    data_errors = -> {
+      if errors[:fact_dependency_unmet].values.any? || errors[:fact_bad_inputs].any?
+        errors
+      end
+    }
+
+    resolved_errors = nil
+
+    if allow_unmet_dependencies
+      data.data_errors = data_errors
+    else
+      resolved_errors = data_errors.call
     end
 
-    begin
-      results[module_name][name] = data.instance_exec(&resolver)
-      results[module_name][name]
-    end
+    results[module_name][name] = resolved_errors || data.instance_exec(&resolver)
+    results[module_name][name]
   end
 end
