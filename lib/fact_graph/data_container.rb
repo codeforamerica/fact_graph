@@ -11,5 +11,11 @@ module FactGraph
     def data_errors
       @data_errors&.call || :fact_incomplete_definition
     end
+
+    def must_match
+      yield
+    rescue NoMatchingPatternError
+      @data_errors&.call || :fact_incomplete_definition
+    end
   end
 end
