@@ -3,7 +3,7 @@ module FactGraph
     attr_writer :data_errors
     attr_accessor :data
 
-    def initialize(data, data_errors = nil)
+    def initialize(data = nil, data_errors: nil)
       @data = data
       @data_errors = data_errors
     end
@@ -15,7 +15,7 @@ module FactGraph
     def must_match
       yield
     rescue NoMatchingPatternError
-      @data_errors&.call || :fact_incomplete_definition
+      data_errors
     end
   end
 end
