@@ -9,7 +9,7 @@ module FactGraph
     end
 
     def data_errors
-      @data_errors&.call || :fact_incomplete_definition
+      @data_errors || :fact_incomplete_definition
     end
 
     def must_match

@@ -60,6 +60,7 @@ RSpec.describe FactGraph::Fact do
         expect(graph[:contact_info][:can_receive_mail]).to eq false
       end
     end
+
     context "when some dependencies are unsatisfied" do
       let(:input) do
         {
@@ -75,8 +76,11 @@ RSpec.describe FactGraph::Fact do
         }
       end
 
-      context "and the fact cannot resolve" do
-        before(:each) { input[:snail_mail_opt_in] = true }
+      context "and the fact cannot resolve because of incomplete definition" do
+        before do
+          input[:snail_mail_opt_in] = true
+          input[:unused_input] = true
+        end
 
         it "should return :fact_incomplete_definition" do
           graph = evaluator.evaluate(input)
@@ -85,7 +89,7 @@ RSpec.describe FactGraph::Fact do
         end
       end
 
-      context "and the fact can resolve" do
+      context "and the fact can resolve despite the presence of data errors" do
         it "should return the appropriate value" do
           graph = evaluator.evaluate(input)
           expect(graph[:contact_info][:can_receive_mail]).to eq false

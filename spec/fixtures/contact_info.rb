@@ -26,6 +26,12 @@ class ContactInfo < FactGraph::Graph
       end
     end
 
+    input :unused_input do
+      schema do
+        required(:unused_input).value(:bool)
+      end
+    end
+
     dependency :formatted_address
 
     proc do
