@@ -87,7 +87,7 @@ class FactGraph::Fact
 
     results[module_name] ||= {}
 
-    # NOTE: This closes over both errors, which is defined in the
+    # NOTE: This closes over errors, which is defined in the
     # scope of this method. Refactoring would require moving this context
     # somewhere reusable. Be prepared if you decide to do so
     data_errors = -> {
