@@ -1,8 +1,10 @@
-AllCops:
-  TargetRubyVersion: 3.1
+inherit_gem: { standard: config/base.yml }
 
-Style/StringLiterals:
-  EnforcedStyle: double_quotes
+# AllCops:
+#   TargetRubyVersion: 3.1
 
-Style/StringLiteralsInInterpolation:
-  EnforcedStyle: double_quotes
+# Style/StringLiterals:
+#   EnforcedStyle: double_quotes
+
+# Style/StringLiteralsInInterpolation:
+#   EnforcedStyle: double_quotes

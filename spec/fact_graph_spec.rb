@@ -40,6 +40,7 @@ RSpec.describe FactGraph do
       let(:expected_result) do
         {
           math_facts: {
+            pi: 3.14,
             squared_scale: {
               fact_bad_inputs: {
                 [:scale] => Set.new(["must be Numeric"])
@@ -56,6 +57,9 @@ RSpec.describe FactGraph do
                 math_facts: [:squared_scale]
               }
             }
+          },
+          simple_facts: {
+            two: 2
           }
         }
       end
@@ -70,6 +74,7 @@ RSpec.describe FactGraph do
       let(:expected_result) do
         {
           math_facts: {
+            pi: 3.14,
             squared_scale: {
               fact_bad_inputs: {
                 [:scale] => Set.new(["must be Numeric"])
@@ -86,6 +91,9 @@ RSpec.describe FactGraph do
                 math_facts: [:squared_scale]
               }
             }
+          },
+          simple_facts: {
+            two: 2
           }
         }
       end
@@ -100,6 +108,7 @@ RSpec.describe FactGraph do
       let(:expected_result) do
         {
           math_facts: {
+            pi: 3.14,
             squared_scale: 25
           },
           circle_facts: {
@@ -109,6 +118,9 @@ RSpec.describe FactGraph do
               },
               fact_dependency_unmet: {}
             }
+          },
+          simple_facts: {
+            two: 2
           }
         }
       end
@@ -123,6 +135,7 @@ RSpec.describe FactGraph do
       let(:expected_result) do
         {
           math_facts: {
+            pi: 3.14,
             squared_scale: 25
           },
           circle_facts: {
@@ -133,6 +146,9 @@ RSpec.describe FactGraph do
               },
               fact_dependency_unmet: {}
             }
+          },
+          simple_facts: {
+            two: 2
           }
         }
       end
@@ -147,10 +163,14 @@ RSpec.describe FactGraph do
       let(:expected_result) do
         {
           math_facts: {
+            pi: 3.14,
             squared_scale: 25
           },
           circle_facts: {
             areas: [3.14 * 25, 3.14 * 25 * 4]
+          },
+          simple_facts: {
+            two: 2
           }
         }
       end

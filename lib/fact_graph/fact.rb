@@ -1,12 +1,13 @@
 class FactGraph::Fact
-  attr_accessor :name, :module_name, :resolver, :dependencies, :input_schemas, :graph
+  attr_accessor :name, :module_name, :resolver, :dependencies, :input_schemas, :graph, :allow_unmet_dependencies
 
-  def initialize(name:, module_name:, graph:, def_proc:)
+  def initialize(name:, module_name:, graph:, def_proc:, allow_unmet_dependencies: false)
     @name = name
     @module_name = module_name
     @dependencies = {}
     @input_schemas = {}
     @graph = graph
+    @allow_unmet_dependencies = allow_unmet_dependencies
 
     @resolver = instance_eval(&def_proc)
   end
@@ -57,8 +58,13 @@ class FactGraph::Fact
   end
 
   def call(input, results)
-    return resolver unless resolver.respond_to?(:call)
     return results[module_name][name] if results.key?(module_name) && results[module_name].key?(name)
+
+    if !resolver.respond_to?(:call)
+      results[module_name] ||= {}
+      results[module_name][name] = resolver
+      return resolver
+    end
 
     data = FactGraph::DataContainer.new(
       {
@@ -76,24 +82,27 @@ class FactGraph::Fact
     validate_input(data.data[:input], errors)
 
     data.data[:dependencies].each do |key, dependency|
-      case dependency
-      in {fact_dependency_unmet: Hash} | {fact_bad_inputs: Array}
+      if dependency in {fact_dependency_unmet: Hash} | {fact_bad_inputs: Array}
         bad_module = dependency_facts[key].module_name
         errors[:fact_dependency_unmet][bad_module] << key
-      else
       end
     end
 
     results[module_name] ||= {}
 
-    if errors[:fact_dependency_unmet].values.any? || errors[:fact_bad_inputs].any?
-      results[module_name][name] = errors
-      return results[module_name][name]
+    if errors[:fact_dependency_unmet].any? || errors[:fact_bad_inputs].any?
+      data_errors = errors
     end
 
-    begin
-      results[module_name][name] = data.instance_exec(&resolver)
-      results[module_name][name]
+    resolved_errors = nil
+
+    if allow_unmet_dependencies
+      data.data_errors = data_errors
+    else
+      resolved_errors = data_errors
     end
+
+    results[module_name][name] = resolved_errors || data.instance_exec(&resolver)
+    results[module_name][name]
   end
 end

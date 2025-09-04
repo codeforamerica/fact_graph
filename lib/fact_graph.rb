@@ -24,8 +24,8 @@ module FactGraph
         subclass.graph_registry = []
       end
 
-      def fact(name, &def_proc)
-        superclass.graph_registry << {module_name:, name:, def_proc:}
+      def fact(name, **kwargs, &def_proc)
+        superclass.graph_registry << {module_name:, name:, def_proc:, **kwargs}
       end
       alias_method :constant, :fact
 
