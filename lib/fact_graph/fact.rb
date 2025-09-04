@@ -58,8 +58,13 @@ class FactGraph::Fact
   end
 
   def call(input, results)
-    return resolver unless resolver.respond_to?(:call)
     return results[module_name][name] if results.key?(module_name) && results[module_name].key?(name)
+
+    if !resolver.respond_to?(:call)
+      results[module_name] ||= {}
+      results[module_name][name] = resolver
+      return resolver
+    end
 
     data = FactGraph::DataContainer.new(
       {
