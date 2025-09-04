@@ -82,19 +82,17 @@ class FactGraph::Fact
     validate_input(data.data[:input], errors)
 
     data.data[:dependencies].each do |key, dependency|
-      case dependency
-      in {fact_dependency_unmet: Hash} | {fact_bad_inputs: Array}
+      if dependency in {fact_dependency_unmet: Hash} | {fact_bad_inputs: Array}
         bad_module = dependency_facts[key].module_name
         errors[:fact_dependency_unmet][bad_module] << key
-      else
       end
     end
 
     results[module_name] ||= {}
 
-    data_errors = if errors[:fact_dependency_unmet].values.any? || errors[:fact_bad_inputs].any?
-        errors
-      end
+    if errors[:fact_dependency_unmet].any? || errors[:fact_bad_inputs].any?
+      data_errors = errors
+    end
 
     resolved_errors = nil
 
