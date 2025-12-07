@@ -29,7 +29,7 @@ module FactGraph
       end
       alias_method :constant, :fact
 
-      def prepare_fact_objects(module_filter = nil)
+      def prepare_fact_objects(input, module_filter = nil)
         graph = {}
 
         graph_registry = self.graph_registry
@@ -42,11 +42,22 @@ module FactGraph
 
         graph_registry.map do |fact_kwargs|
           fact_kwargs in {module_name:, name:}
-
-          fact = FactGraph::Fact.new(graph:, **fact_kwargs)
-
           graph[module_name] ||= {}
-          graph[module_name][name] = fact
+
+          if fact_kwargs.key? :per_entity
+            graph[module_name][name] = {}
+
+            # replace this with a different method of getting entity IDs if we e.g. switch to hashes of ID=>entity_hash
+            num_entities = input[fact_kwargs[:per_entity]].count
+            num_entities.times do |entity_id|
+              fact_kwargs[:entity_id] = entity_id
+              fact = FactGraph::Fact.new(graph:, **fact_kwargs)
+              graph[module_name][name][entity_id] = fact
+            end
+          else
+            fact = FactGraph::Fact.new(graph:, **fact_kwargs)
+            graph[module_name][name] = fact
+          end
         end
 
         graph

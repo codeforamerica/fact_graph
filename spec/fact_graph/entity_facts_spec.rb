@@ -11,8 +11,7 @@ RSpec.describe "Entity Facts" do
     load "spec/fixtures/entities.rb"
   end
 
-  let(:evaluator) { FactGraph::Evaluator.new }
-  let(:results) { evaluator.evaluate(input) }
+  let(:results) { FactGraph::Evaluator.evaluate(input) }
 
   context "with complete entities in input" do
     let(:input) {
@@ -34,10 +33,9 @@ RSpec.describe "Entity Facts" do
       expected_output = {
         age_threshold: 100,
         income_threshold: 100,
-        income: [48, 380],
-        age: [101, 46],
-        num_applicants: 2,
-        eligible: [true, false]
+        income: {0 => 48, 1 => 380},
+        age: {0 => 101, 1 => 46},
+        eligible: {0 => true, 1 => false}
       }
       expect(results[:applicant_facts]).to eq(expected_output)
     end
@@ -48,7 +46,7 @@ RSpec.describe "Entity Facts" do
       {
         applicants: [
           {
-            income: 101,
+            income: 99,
           },
           {
             age: 101
@@ -61,10 +59,9 @@ RSpec.describe "Entity Facts" do
       expected_output = {
         age_threshold: 100,
         income_threshold: 100,
-        income: [48, bad_fact_matcher],
-        age: [bad_fact_matcher, 46],
-        num_applicants: 2,
-        eligible: [true, true]
+        income: {0 => 99, 1 => bad_fact_matcher},
+        age: {0 => bad_fact_matcher, 1 => 101},
+        eligible: {0 => true, 1 => true}
       }
       expect(results[:applicant_facts]).to match(expected_output)
     end

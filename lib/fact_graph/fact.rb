@@ -1,12 +1,14 @@
 class FactGraph::Fact
-  attr_accessor :name, :module_name, :resolver, :dependencies, :input_schemas, :graph, :allow_unmet_dependencies
+  attr_accessor :name, :module_name, :resolver, :dependencies, :input_definitions, :graph, :per_entity, :entity_id, :allow_unmet_dependencies
 
-  def initialize(name:, module_name:, graph:, def_proc:, allow_unmet_dependencies: false)
+  def initialize(name:, module_name:, graph:, def_proc:, per_entity: nil, entity_id: nil, allow_unmet_dependencies: false)
     @name = name
     @module_name = module_name
     @dependencies = {}
-    @input_schemas = {}
+    @input_definitions = {}
     @graph = graph
+    @per_entity = per_entity
+    @entity_id = entity_id
     @allow_unmet_dependencies = allow_unmet_dependencies
 
     @resolver = instance_eval(&def_proc)
@@ -25,29 +27,48 @@ class FactGraph::Fact
       fact_name, module_name = values
       fact = graph[module_name][fact_name]
       raise "#{name}: could not find dependency #{fact_name} in module #{module_name}" if fact.nil?
-      result_hash[fact_name] = fact
+
+      if fact.is_a? FactGraph::Fact
+        result_hash[fact_name] = fact
+      elsif fact.is_a? Hash
+        result_hash[fact_name] = fact[entity_id]
+      end
     end
   end
 
-  def input(name, &schema)
+  def input(name, **kwargs, &schema)
     # XXX: Is this a problem? Having multiple subclasses? Should we cache?
-    input_schemas[name] = Class.new(FactGraph::Input).class_exec(&schema)
+    input_definitions[name] = kwargs.merge({ validator: Class.new(FactGraph::Input).class_exec(&schema) })
   end
 
   def filter_input(input)
     # Filter out unused inputs
-    required_inputs = input.select { |input_name, _| input_schemas.key? input_name }
+    required_inputs = input.select { |input_name, _| input_definitions.key?(input_name) }
+
+    # Pull inputs expected from individual entities
+    # TODO: We should enforce at initialization that both per_entity & entity_id are present if there are inputs with the per_entity key
+    if per_entity && entity_id
+      inputs_from_entities = input_definitions.select do |_input_name, input_definition|
+        input_definition.key? :from_entity
+      end
+      inputs_from_entities.each do |input_name, input_definition|
+        entity_name = input_definition[:from_entity] # TODO: Again with unenforced constraints - this should only ever be the same as our per_entity attribute
+        required_inputs[input_name] = input[entity_name][entity_id][input_name]
+      end
+    end
 
     # Filter structured input down to only include keys that we require
     required_inputs.to_h do |input_name, _|
+      validator = input_definitions[input_name][:validator]
       # We expect to have at most one schema for any key in the input hash, so we don't try to merge filtered values
-      [input_name, input_schemas[input_name].key_map.write(input)[input_name]]
+      [input_name, validator.key_map.write(required_inputs)[input_name]]
     end
   end
 
   def validate_input(input, errors)
-    input_schemas.each do |input_name, input_schema|
-      result = input_schema.call("#{input_name}": input[input_name])
+    input_definitions.each do |input_name, input_definition|
+      input_validator = input_definition[:validator]
+      result = input_validator.call("#{input_name}": input[input_name])
       if result.failure?
         result.errors.each do |error|
           errors[:fact_bad_inputs][error.path] ||= Set.new
@@ -58,10 +79,16 @@ class FactGraph::Fact
   end
 
   def call(input, results)
-    return results[module_name][name] if results.key?(module_name) && results[module_name].key?(name)
+    if per_entity
+      return results.dig(module_name, name, entity_id) if results.dig(module_name, name, entity_id)
+    else
+      return results.dig(module_name, name) if results.dig(module_name, name)
+    end
 
     if !resolver.respond_to?(:call)
       results[module_name] ||= {}
+
+      # TODO: Assuming constant facts are not per-entity for now, maybe change this
       results[module_name][name] = resolver
       return resolver
     end
@@ -82,7 +109,7 @@ class FactGraph::Fact
     validate_input(data.data[:input], errors)
 
     data.data[:dependencies].each do |key, dependency|
-      if dependency in {fact_dependency_unmet: Hash} | {fact_bad_inputs: Array}
+      if dependency in { fact_dependency_unmet: Hash } | { fact_bad_inputs: Array }
         bad_module = dependency_facts[key].module_name
         errors[:fact_dependency_unmet][bad_module] << key
       end
@@ -102,7 +129,11 @@ class FactGraph::Fact
       resolved_errors = data_errors
     end
 
-    results[module_name][name] = resolved_errors || data.instance_exec(&resolver)
-    results[module_name][name]
+    if per_entity
+      results[module_name][name] ||= {}
+      results[module_name][name][entity_id] = resolved_errors || data.instance_exec(&resolver)
+    else
+      results[module_name][name] = resolved_errors || data.instance_exec(&resolver)
+    end
   end
 end

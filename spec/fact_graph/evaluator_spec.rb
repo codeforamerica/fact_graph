@@ -7,32 +7,29 @@ RSpec.describe FactGraph::Evaluator do
   end
 
   describe "#key_matches_key_path" do
-    let(:evaluator) { described_class.new }
-
     context "when passed a key that includes keymaps, hashes and arrays" do
       let(:key) { Dry::Schema::KeyMap[:title, :artist, [:tags, [:name]]] }
 
       it "returns true for a matching simple key path" do
-        expect(evaluator.key_matches_key_path?(key, [:title])).to be_truthy
+        expect(described_class.key_matches_key_path?(key, [:title])).to be_truthy
       end
 
       it "returns true for a matching complex key path" do
-        expect(evaluator.key_matches_key_path?(key, [:tags, 0, :name])).to be_truthy
+        expect(described_class.key_matches_key_path?(key, [:tags, 0, :name])).to be_truthy
       end
 
       it "returns false for a non-matching simple key path" do
-        expect(evaluator.key_matches_key_path?(key, [:release_year])).to be_falsey
+        expect(described_class.key_matches_key_path?(key, [:release_year])).to be_falsey
       end
 
       it "returns false for a non-matching complex key path" do
-        expect(evaluator.key_matches_key_path?(key, [:tags, 0, :creator])).to be_falsey
+        expect(described_class.key_matches_key_path?(key, [:tags, 0, :creator])).to be_falsey
       end
     end
   end
 
   describe "#facts_using_input" do
-    let(:evaluator) { described_class.new }
-    let(:results) { evaluator.facts_using_input(query_input) }
+    let(:results) { described_class.facts_using_input(query_input) }
 
     context "when you query for an unused input" do
       let(:query_input) { [:foo] }
@@ -74,8 +71,7 @@ RSpec.describe FactGraph::Evaluator do
   end
 
   describe "#facts_with_dependency" do
-    let(:evaluator) { described_class.new }
-    let(:results) { evaluator.facts_with_dependency(query_dependency_module_name, query_dependency_fact_name) }
+    let(:results) { described_class.facts_with_dependency(query_dependency_module_name, query_dependency_fact_name) }
 
     context "when you query for a nonexistent module" do
       let(:query_dependency_module_name) { :foo }
@@ -117,8 +113,7 @@ RSpec.describe FactGraph::Evaluator do
   end
 
   describe "#leaf_facts_depending_on_input" do
-    let(:evaluator) { described_class.new }
-    let(:results) { evaluator.leaf_facts_depending_on_input(query_input) }
+    let(:results) { described_class.leaf_facts_depending_on_input(query_input) }
 
     context "when you query for an unused input" do
       let(:query_input) { [:foo] }
@@ -150,8 +145,7 @@ RSpec.describe FactGraph::Evaluator do
   end
 
   describe ".input_errors" do
-    let(:evaluator) { described_class.new }
-    let!(:evaluation_results) { evaluator.evaluate(input) }
+    let!(:evaluation_results) { described_class.evaluate(input) }
     let(:results) { FactGraph::Evaluator.input_errors(evaluation_results) }
 
     context "when you evaluate with no input" do

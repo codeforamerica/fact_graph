@@ -5,8 +5,7 @@ RSpec.describe FactGraph do
     expect(FactGraph::VERSION).not_to be nil
   end
 
-  let(:evaluator) { FactGraph::Evaluator.new }
-  let(:results) { evaluator.evaluate(input) }
+  let(:results) { FactGraph::Evaluator.evaluate(input) }
 
   before do
     FactGraph::Graph.graph_registry = []
