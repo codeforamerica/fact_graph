@@ -85,7 +85,6 @@ class FactGraph::Fact
     end
 
     if !resolver.respond_to?(:call)
-      results[module_name] ||= {}
       results[module_name][name] = resolver
       return resolver
     end
@@ -111,8 +110,6 @@ class FactGraph::Fact
         errors[:fact_dependency_unmet][bad_module] << key
       end
     end
-
-    results[module_name] ||= {}
 
     if errors[:fact_dependency_unmet].any? || errors[:fact_bad_inputs].any?
       data_errors = errors

@@ -16,11 +16,8 @@ RSpec.describe "Entity Facts" do
   context "with no entities in input" do
     let(:input) { {} }
 
-    it "returns no values for per_entity facts" do
-      expected_output = {
-        age_threshold: 100,
-        income_threshold: 100,
-      }
+    it "returns no values for per_entity facts, but does add a hash for the module despite containing no facts" do
+      expected_output = {}
       expect(results[:applicant_facts]).to eq(expected_output)
     end
   end
@@ -43,8 +40,6 @@ RSpec.describe "Entity Facts" do
 
     it "returns a value for all entities" do
       expected_output = {
-        age_threshold: 100,
-        income_threshold: 100,
         income: {0 => 48, 1 => 380},
         age: {0 => 101, 1 => 46},
         eligible: {0 => true, 1 => false}
@@ -69,8 +64,6 @@ RSpec.describe "Entity Facts" do
 
     it "returns a value for all entities" do
       expected_output = {
-        age_threshold: 100,
-        income_threshold: 100,
         income: {0 => 99, 1 => bad_fact_matcher},
         age: {0 => bad_fact_matcher, 1 => 101},
         eligible: {0 => true, 1 => true}

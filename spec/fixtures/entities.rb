@@ -1,12 +1,4 @@
 class ApplicantFacts < FactGraph::Graph
-  constant :income_threshold do
-    100
-  end
-
-  constant :age_threshold do
-    100
-  end
-
   fact :income, per_entity: :applicants do
     input :income, per_entity: true do
       schema do
@@ -34,13 +26,11 @@ class ApplicantFacts < FactGraph::Graph
   fact :eligible, per_entity: :applicants, allow_unmet_dependencies: true do
     dependency :income
     dependency :age
-    dependency :income_threshold
-    dependency :age_threshold
 
     proc do
-      data in dependencies: { income:, age:, income_threshold:, age_threshold: }
-      if (income.is_a?(Integer) && income < income_threshold) ||
-        (age.is_a?(Integer) && age > age_threshold)
+      data in dependencies: { income:, age: }
+      if (income.is_a?(Integer) && income < 100) ||
+        (age.is_a?(Integer) && age > 100)
         true
       elsif (income in { fact_bad_inputs:, fact_dependency_unmet: }) ||
         (age in { fact_bad_inputs:, fact_dependency_unmet: })
