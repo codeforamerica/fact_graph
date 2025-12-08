@@ -15,9 +15,8 @@ class FactGraph::Evaluator
 
     def evaluate(input, module_filter = nil)
       graph = FactGraph::Graph.prepare_fact_objects(input, module_filter)
-      results = {}
+      results = graph.transform_values { |_| {} }
       graph.each do |module_name, module_hash|
-        results[module_name] ||= {}
         module_hash.values.each do |fact|
           call_fact(fact, input, results)
         end

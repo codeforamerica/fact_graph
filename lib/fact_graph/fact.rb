@@ -84,6 +84,8 @@ class FactGraph::Fact
       return results.dig(module_name, name) if results.dig(module_name, name)
     end
 
+    results[module_name] ||= {}
+
     if !resolver.respond_to?(:call)
       results[module_name][name] = resolver
       return resolver
