@@ -29,6 +29,11 @@ module FactGraph
       end
       alias_method :constant, :fact
 
+      def entity_ids(input, entity_name)
+        # replace this with a different method of getting entity IDs if we e.g. switch to hashes of ID=>entity_hash
+        0...input[entity_name].count
+      end
+
       def prepare_fact_objects(input, module_filter = nil)
         graph = {}
 
@@ -46,10 +51,7 @@ module FactGraph
 
           if fact_kwargs.key? :per_entity
             graph[module_name][name] = {}
-
-            # replace this with a different method of getting entity IDs if we e.g. switch to hashes of ID=>entity_hash
-            num_entities = input[fact_kwargs[:per_entity]].count
-            num_entities.times do |entity_id|
+            entity_ids(input, fact_kwargs[:per_entity]).each do |entity_id|
               fact_kwargs[:entity_id] = entity_id
               fact = FactGraph::Fact.new(graph:, **fact_kwargs)
               graph[module_name][name][entity_id] = fact

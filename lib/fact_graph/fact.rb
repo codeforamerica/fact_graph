@@ -57,7 +57,7 @@ class FactGraph::Fact
       end
     end
 
-    # Filter structured input down to only include keys that we require
+    # Filter structured input down to only include keys that we expect using KeyMap#write
     required_inputs.to_h do |input_name, _|
       validator = input_definitions[input_name][:validator]
       # We expect to have at most one schema for any key in the input hash, so we don't try to merge filtered values
@@ -87,8 +87,6 @@ class FactGraph::Fact
 
     if !resolver.respond_to?(:call)
       results[module_name] ||= {}
-
-      # TODO: Assuming constant facts are not per-entity for now, maybe change this
       results[module_name][name] = resolver
       return resolver
     end
