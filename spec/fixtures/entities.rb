@@ -15,8 +15,7 @@ class ApplicantFacts < FactGraph::Graph
     end
 
     proc do
-      data in input: { income: }
-      income
+      data[:input][:income]
     end
   end
 
@@ -28,8 +27,7 @@ class ApplicantFacts < FactGraph::Graph
     end
 
     proc do
-      data in input: { age: }
-      age
+      data[:input][:age]
     end
   end
 
