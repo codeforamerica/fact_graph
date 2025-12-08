@@ -32,24 +32,25 @@ module FactGraph
       def entity_ids(input, entity_name)
         # replace this with a different method of getting entity IDs if we e.g. switch to hashes of ID=>entity_hash
         if input.key? entity_name
-          0...input[entity_name].count
+          (0...input[entity_name].count).to_a
         else
           []
         end
       end
 
+      def filter_graph(module_filter)
+        if module_filter
+          self.graph_registry.select do |fact_kwargs|
+            module_filter.include? fact_kwargs[:module_name]
+          end
+        else
+          self.graph_registry
+        end
+      end
+
       def prepare_fact_objects(input, module_filter = nil)
         graph = {}
-
-        graph_registry = self.graph_registry
-        if module_filter
-          graph_registry = graph_registry.select do |fact_kwargs|
-            fact_kwargs in {module_name:}
-            module_filter.include? module_name
-          end
-        end
-
-        graph_registry.map do |fact_kwargs|
+        filter_graph(module_filter).map do |fact_kwargs|
           fact_kwargs in {module_name:, name:}
           graph[module_name] ||= {}
 
@@ -67,6 +68,17 @@ module FactGraph
         end
 
         graph
+      end
+
+      def entity_map(input, module_filter = nil)
+        entity_map = {}
+        filter_graph(module_filter).each do |fact_kwargs|
+          if fact_kwargs.key? :per_entity
+            entity_name = fact_kwargs[:per_entity]
+            entity_map[entity_name] = entity_ids(input, entity_name)
+          end
+        end
+        entity_map
       end
     end
   end
