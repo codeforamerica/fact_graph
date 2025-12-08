@@ -43,7 +43,7 @@ class FactGraph::Fact
 
   def filter_input(input)
     # Filter out unused inputs
-    required_inputs = input.select { |input_name, _| input_definitions.key?(input_name) }
+    required_inputs = input.select { |input_name, _| input_definitions.key? input_name }
 
     # Pull inputs expected from individual entities
     # TODO: We should enforce at initialization that both per_entity & entity_id are present if there are inputs with the per_entity key
