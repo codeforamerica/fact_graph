@@ -49,11 +49,10 @@ class FactGraph::Fact
     # TODO: We should enforce at initialization that both per_entity & entity_id are present if there are inputs with the per_entity key
     if per_entity && entity_id
       inputs_from_entities = input_definitions.select do |_input_name, input_definition|
-        input_definition.key? :from_entity
+        input_definition[:per_entity] == true
       end
       inputs_from_entities.each do |input_name, input_definition|
-        entity_name = input_definition[:from_entity] # TODO: Again with unenforced constraints - this should only ever be the same as our per_entity attribute
-        required_inputs[input_name] = input[entity_name][entity_id][input_name]
+        required_inputs[input_name] = input[per_entity][entity_id][input_name]
       end
     end
 

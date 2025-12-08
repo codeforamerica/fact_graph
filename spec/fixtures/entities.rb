@@ -8,7 +8,7 @@ class ApplicantFacts < FactGraph::Graph
   end
 
   fact :income, per_entity: :applicants do
-    input :income, from_entity: :applicants do
+    input :income, per_entity: true do
       schema do
         required(:income).value(:integer)
       end
@@ -20,7 +20,7 @@ class ApplicantFacts < FactGraph::Graph
   end
 
   fact :age, per_entity: :applicants do
-    input :age, from_entity: :applicants do
+    input :age, per_entity: true do
       schema do
         required(:age).value(:integer)
       end
@@ -39,10 +39,8 @@ class ApplicantFacts < FactGraph::Graph
 
     proc do
       data in dependencies: { income:, age:, income_threshold:, age_threshold: }
-      puts "got income #{income}"
-      puts "got age #{age}"
-      if (income.is_a?(Integer) && income&.<(income_threshold)) ||
-        (age.is_a?(Integer) && age&.>(age_threshold))
+      if (income.is_a?(Integer) && income < income_threshold) ||
+        (age.is_a?(Integer) && age > age_threshold)
         true
       elsif (income in { fact_bad_inputs:, fact_dependency_unmet: }) ||
         (age in { fact_bad_inputs:, fact_dependency_unmet: })
