@@ -31,7 +31,11 @@ module FactGraph
 
       def entity_ids(input, entity_name)
         # replace this with a different method of getting entity IDs if we e.g. switch to hashes of ID=>entity_hash
-        0...input[entity_name].count
+        if input.key? entity_name
+          0...input[entity_name].count
+        else
+          []
+        end
       end
 
       def prepare_fact_objects(input, module_filter = nil)

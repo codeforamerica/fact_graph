@@ -13,6 +13,18 @@ RSpec.describe "Entity Facts" do
 
   let(:results) { FactGraph::Evaluator.evaluate(input) }
 
+  context "with no entities in input" do
+    let(:input) { {} }
+
+    it "returns no values for per_entity facts" do
+      expected_output = {
+        age_threshold: 100,
+        income_threshold: 100,
+      }
+      expect(results[:applicant_facts]).to eq(expected_output)
+    end
+  end
+
   context "with complete entities in input" do
     let(:input) {
       {
