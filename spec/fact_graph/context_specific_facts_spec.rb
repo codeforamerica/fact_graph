@@ -8,9 +8,16 @@ RSpec.describe "Context-specific facts" do
   end
 
   it "does" do
-    puts Ty2024Graph.prepare_fact_objects({})[:dependent][:age].call({},{})
-    puts Ty2024Graph.prepare_fact_objects({})[:filer][:age].call({},{})
-    puts Ty2025Graph.prepare_fact_objects({})[:dependent][:age].call({},{})
-    puts Ty2025Graph.prepare_fact_objects({})[:filer][:age].call({},{})
+    expect(Ty2024Graph.prepare_fact_objects({})[:filer][:age].call({},{})).to eq 34
+    expect(Ty2024Graph.prepare_fact_objects({})[:dependent][:age].call({},{})).to eq 24
+
+    expect(Ty2025Graph.prepare_fact_objects({})[:filer][:age].call({},{})).to eq 35
+    expect(Ty2025Graph.prepare_fact_objects({})[:dependent][:age].call({},{})).to eq 25
+
+    expect(FactGraph::Evaluator.evaluate({}, graph_class: Ty2024Graph)[:filer][:age]).to eq 34
+    expect(FactGraph::Evaluator.evaluate({}, graph_class: Ty2024Graph)[:dependent][:age]).to eq 24
+
+    expect(FactGraph::Evaluator.evaluate({}, graph_class: Ty2025Graph)[:filer][:age]).to eq 35
+    expect(FactGraph::Evaluator.evaluate({}, graph_class: Ty2025Graph)[:dependent][:age]).to eq 25
   end
 end
