@@ -17,11 +17,18 @@ module FactGraph
     class << self
       attr_accessor :graph_registry
 
-      def module_name = to_s.underscore.split("/").last.to_sym
+      def module_name = @module_name || to_s.underscore.split("/").last.to_sym
 
       def inherited(subclass)
         super
         subclass.graph_registry = []
+      end
+
+      def in_module(module_name, &blk)
+        previous_module = @module_name
+        @module_name = module_name
+        yield
+        @module_name = previous_module
       end
 
       def fact(name, **kwargs, &def_proc)
