@@ -49,8 +49,9 @@ class FactGraph::Evaluator
       end
     end
 
-    def facts_using_input(query_input, module_filter = nil)
-      graph = FactGraph::Graph.prepare_fact_objects(module_filter)
+    def facts_using_input(query_input, graph_class: nil,  module_filter: nil)
+      graph_class ||= FactGraph::Graph
+      graph = graph_class.prepare_fact_objects(module_filter)
       graph.flat_map do |_, facts|
         facts.select do |_, fact|
           fact.input_definitions.any? do |_, input_definition|
@@ -61,8 +62,9 @@ class FactGraph::Evaluator
       end
     end
 
-    def facts_with_dependency(query_module_name, query_fact_name, module_filter = nil)
-      graph = FactGraph::Graph.prepare_fact_objects(module_filter)
+    def facts_with_dependency(query_module_name, query_fact_name, graph_class: nil,  module_filter: nil)
+      graph_class ||= FactGraph::Graph
+      graph = graph_class.prepare_fact_objects(module_filter)
       graph.flat_map do |_, facts|
         facts.select do |_, fact|
           fact.dependencies[query_fact_name] == query_module_name
