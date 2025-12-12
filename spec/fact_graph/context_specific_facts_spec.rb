@@ -7,7 +7,7 @@ RSpec.describe "Context-specific facts" do
     load "spec/fixtures/context_specific_facts/ty_2025_graph.rb"
   end
 
-  it "does" do
+  it "allows separate graphs to contain some shared and some specific facts with correct module names" do
     expect(Ty2024Graph.prepare_fact_objects({})[:filer][:age].call({},{})).to eq 34
     expect(Ty2024Graph.prepare_fact_objects({})[:dependent][:age].call({},{})).to eq 24
 
