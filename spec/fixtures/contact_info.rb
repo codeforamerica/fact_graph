@@ -1,7 +1,7 @@
 class ContactInfo < FactGraph::Graph
   fact :formatted_address do
     input :street_address do
-      schema do
+      Dry::Schema.Params do
         required(:street_address).hash do
           required(:street_number).value(:integer)
           required(:street_name).value(:string)
@@ -21,13 +21,13 @@ class ContactInfo < FactGraph::Graph
 
   fact :can_receive_mail, allow_unmet_dependencies: true do
     input :snail_mail_opt_in do
-      schema do
+      Dry::Schema.Params do
         required(:snail_mail_opt_in).value(:bool)
       end
     end
 
     input :unused_input do
-      schema do
+      Dry::Schema.Params do
         required(:unused_input).value(:bool)
       end
     end

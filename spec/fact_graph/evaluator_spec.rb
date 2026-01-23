@@ -8,7 +8,7 @@ RSpec.describe FactGraph::Evaluator do
 
   describe "#key_matches_key_path" do
     context "when passed a key that includes keymaps, hashes and arrays" do
-      let(:key) { Dry::Schema::KeyMap[:title, :artist, [:tags, [:name]]] }
+      let(:key) { Dry::Schema::KeyMap["title", "artist", ["tags", ["name"]]] }
 
       it "returns true for a matching simple key path" do
         expect(described_class.key_matches_key_path?(key, [:title])).to be_truthy

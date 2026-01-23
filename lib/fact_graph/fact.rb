@@ -1,3 +1,5 @@
+require "dry/schema"
+
 class FactGraph::Fact
   attr_accessor :name, :module_name, :resolver, :dependencies, :input_definitions, :graph, :per_entity, :entity_id, :allow_unmet_dependencies
 
@@ -36,9 +38,8 @@ class FactGraph::Fact
     end
   end
 
-  def input(name, **kwargs, &schema)
-    # XXX: Is this a problem? Having multiple subclasses? Should we cache?
-    input_definitions[name] = kwargs.merge({ validator: Class.new(FactGraph::Input).class_exec(&schema) })
+  def input(name, **kwargs, &schema_blk)
+    input_definitions[name] = kwargs.merge({ validator: schema_blk.call })
   end
 
   def filter_input(input)
