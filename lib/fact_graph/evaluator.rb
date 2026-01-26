@@ -34,16 +34,16 @@ class FactGraph::Evaluator
           key_matches_key_path?(key, key_path)
         end
       when Dry::Schema::Key::Array
-        match = key.name == key_path[0]
+        match = key.name == key_path[0].to_s
         match &&= key_path[1].is_a?(Integer) if key_path.count > 1
         match &&= key_matches_key_path?(key.member, key_path[2..]) if key_path.count > 2
         match
       when Dry::Schema::Key::Hash
-        match = key.name == key_path[0]
+        match = key.name == key_path[0].to_s
         match &&= key_matches_key_path?(key.members, key_path[1..]) if key_path.count > 1
         match
       when Dry::Schema::Key
-        key.name == key_path[0] && key_path.count == 1
+        key.name == key_path[0].to_s && key_path.count == 1
       else
         false
       end
