@@ -23,7 +23,6 @@ class ClearGraph < MCP::Tool
 
       if keep_test_cases
         graph_state.facts.clear
-        graph_state.instance_variable_set(:@code, nil)
         message = "Cleared #{fact_count} facts (kept #{test_count} test cases)"
       else
         graph_state.clear

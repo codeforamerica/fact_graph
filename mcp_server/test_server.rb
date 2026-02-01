@@ -63,7 +63,6 @@ puts
 
 # Test 5: Validate the exported code
 puts "5. Validating exported code..."
-graph_state.set_code(code)
 validate_response = ValidateCode.call(server_context: server_context)
 puts "   #{validate_response.content.first[:text]}"
 puts

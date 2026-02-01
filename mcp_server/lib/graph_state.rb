@@ -1,22 +1,15 @@
 # frozen_string_literal: true
 
 class GraphState
-  attr_reader :facts, :code, :test_cases
+  attr_reader :facts, :test_cases
 
   def initialize
     @facts = []       # Structured fact definitions
-    @code = nil       # Raw code (from generate_fact_graph or manual)
     @test_cases = []  # Test cases for validation
-  end
-
-  def set_code(code)
-    @code = code
-    @facts = []  # Clear structured facts when setting raw code
   end
 
   def add_fact(fact_def)
     @facts << fact_def
-    @code = nil  # Invalidate raw code cache when adding structured facts
   end
 
   def update_fact(name, module_name, updates)
@@ -24,13 +17,11 @@ class GraphState
     return false unless fact
 
     fact.merge!(updates)
-    @code = nil
     true
   end
 
   def remove_fact(name, module_name)
     @facts.reject! { |f| f[:name] == name && f[:module_name] == module_name }
-    @code = nil
   end
 
   def get_fact(name, module_name = nil)
@@ -50,7 +41,6 @@ class GraphState
   end
 
   def export_code(format: "single_file")
-    return @code if @code && @facts.empty?
     return nil if @facts.empty?
 
     case format
@@ -65,7 +55,6 @@ class GraphState
 
   def clear
     @facts = []
-    @code = nil
     @test_cases = []
   end
 

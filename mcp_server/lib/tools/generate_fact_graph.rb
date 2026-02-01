@@ -21,13 +21,10 @@ class GenerateFactGraph < MCP::Tool
 
   class << self
     def call(policy:, module_name: nil, server_context:)
-      graph_state = server_context[:graph_state]
-
       # TODO: This is where the LLM-generated code will come from
       # For now, return a stub that shows the expected format
+      # The generated code is returned for display only - use add_fact to build the graph
       code = generate_stub_code(policy, module_name)
-
-      graph_state.set_code(code)
 
       MCP::Tool::Response.new([{
         type: "text",
