@@ -11,10 +11,6 @@ class EvaluateFacts < MCP::Tool
         type: "object",
         description: "Input data to evaluate the fact graph against"
       },
-      code: {
-        type: "string",
-        description: "Ruby code to evaluate (optional, uses current graph state if not provided)"
-      },
       module_filter: {
         type: "array",
         items: { type: "string" },
@@ -25,9 +21,9 @@ class EvaluateFacts < MCP::Tool
   )
 
   class << self
-    def call(input:, code: nil, module_filter: nil, server_context:)
+    def call(input:, module_filter: nil, server_context:)
       graph_state = server_context[:graph_state]
-      code ||= graph_state.code
+      code = graph_state.export_code
 
       if code.nil? || code.empty?
         return MCP::Tool::Response.new([{

@@ -6,18 +6,13 @@ class RunTestCases < MCP::Tool
 
   input_schema(
     type: "object",
-    properties: {
-      code: {
-        type: "string",
-        description: "Ruby code to test (optional, uses current graph state if not provided)"
-      }
-    }
+    properties: {}
   )
 
   class << self
-    def call(code: nil, server_context:)
+    def call(server_context:)
       graph_state = server_context[:graph_state]
-      code ||= graph_state.code || graph_state.export_code
+      code = graph_state.export_code
 
       if graph_state.test_cases.empty?
         return MCP::Tool::Response.new([{

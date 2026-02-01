@@ -10,10 +10,6 @@ class ValidateCode < MCP::Tool
   input_schema(
     type: "object",
     properties: {
-      code: {
-        type: "string",
-        description: "Ruby code to validate (optional, uses current graph state if not provided)"
-      },
       test_input: {
         type: "object",
         description: "Optional sample input to test evaluation against"
@@ -22,9 +18,9 @@ class ValidateCode < MCP::Tool
   )
 
   class << self
-    def call(code: nil, test_input: nil, server_context:)
+    def call(test_input: nil, server_context:)
       graph_state = server_context[:graph_state]
-      code ||= graph_state.code
+      code = graph_state.export_code
 
       if code.nil? || code.empty?
         return error_response("No code to validate. Use generate_fact_graph or add_fact first.")
