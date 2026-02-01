@@ -1,0 +1,8 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "mcp"
+
+# Reference the local fact_graph gem
+gem "fact_graph", path: ".."
