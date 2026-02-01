@@ -33,7 +33,11 @@ class FactGraph::Fact
       if fact.is_a? FactGraph::Fact
         result_hash[fact_name] = fact
       elsif fact.is_a? Hash
-        result_hash[fact_name] = fact[entity_id]
+        if entity_id
+          result_hash[fact_name] = fact[entity_id]
+        else
+          result_hash[fact_name] = fact
+        end
       end
     end
   end
@@ -92,10 +96,18 @@ class FactGraph::Fact
       return resolver
     end
 
+    evaluated_dependencies = dependency_facts.transform_values do |dependency|
+      if dependency.is_a? FactGraph::Fact
+        dependency.call(input, results)
+      elsif dependency.is_a? Hash
+        dependency.to_h { |k, v| [k, v.call(input, results)] }
+      end
+    end
+
     data = FactGraph::DataContainer.new(
       {
         # TODO: Should dependencies be in module hashes to allow fact name collisions across modules?
-        dependencies: dependency_facts.transform_values { |d| d.call(input, results) },
+        dependencies: evaluated_dependencies,
         input: filter_input(input)
       }
     )
