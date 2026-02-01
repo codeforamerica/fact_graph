@@ -10,7 +10,6 @@ require "fact_graph"
 
 require_relative "lib/graph_state"
 require_relative "lib/resources"
-require_relative "lib/tools/generate_fact_graph"
 require_relative "lib/tools/validate_code"
 require_relative "lib/tools/evaluate_facts"
 require_relative "lib/tools/add_fact"

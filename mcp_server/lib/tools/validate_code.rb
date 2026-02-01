@@ -23,7 +23,7 @@ class ValidateCode < MCP::Tool
       code = graph_state.export_code
 
       if code.nil? || code.empty?
-        return error_response("No code to validate. Use generate_fact_graph or add_fact first.")
+        return error_response("No code to validate. Use add_fact first.")
       end
 
       # Run validation pipeline

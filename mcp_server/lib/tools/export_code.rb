@@ -24,7 +24,7 @@ class ExportCode < MCP::Tool
       if code.nil? || code.empty?
         return MCP::Tool::Response.new([{
           type: "text",
-          text: "No facts defined yet. Use add_fact or generate_fact_graph first."
+          text: "No facts defined yet. Use add_fact first."
         }])
       end
 

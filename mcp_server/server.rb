@@ -14,7 +14,6 @@ require_relative "lib/prompts"
 require_relative "lib/prompts/examples"
 
 # Load tools
-require_relative "lib/tools/generate_fact_graph"
 require_relative "lib/tools/validate_code"
 require_relative "lib/tools/evaluate_facts"
 require_relative "lib/tools/add_fact"
@@ -34,7 +33,6 @@ server = MCP::Server.new(
   name: "factgraph_policy_server",
   version: "0.1.0",
   tools: [
-    GenerateFactGraph,
     ValidateCode,
     EvaluateFacts,
     AddFact,

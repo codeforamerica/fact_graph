@@ -27,7 +27,7 @@ class RunTestCases < MCP::Tool
         return MCP::Tool::Response.new([{
           type: "text",
           text: JSON.pretty_generate({
-            error: "No code to test. Use add_fact or generate_fact_graph first."
+            error: "No code to test. Use add_fact first."
           })
         }])
       end
