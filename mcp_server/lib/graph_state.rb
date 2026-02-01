@@ -164,14 +164,17 @@ class GraphState
       lines << "#{indent * 2}proc do"
 
       # Build pattern match to extract inputs and dependencies
-      input_names = (fact[:inputs] || []).map { |i| i[:name] }
-      dep_names = (fact[:dependencies] || []).map { |d| d[:name] }
+      # Skip if resolver already contains a pattern match
+      unless fact[:resolver].include?("data in")
+        input_names = (fact[:inputs] || []).map { |i| i[:name] }
+        dep_names = (fact[:dependencies] || []).map { |d| d[:name] }
 
-      if input_names.any? || dep_names.any?
-        pattern_parts = []
-        pattern_parts << "input: { #{input_names.map { |n| "#{n}:" }.join(", ")} }" if input_names.any?
-        pattern_parts << "dependencies: { #{dep_names.map { |n| "#{n}:" }.join(", ")} }" if dep_names.any?
-        lines << "#{indent * 3}data in #{pattern_parts.join(", ")}"
+        if input_names.any? || dep_names.any?
+          pattern_parts = []
+          pattern_parts << "input: { #{input_names.map { |n| "#{n}:" }.join(", ")} }" if input_names.any?
+          pattern_parts << "dependencies: { #{dep_names.map { |n| "#{n}:" }.join(", ")} }" if dep_names.any?
+          lines << "#{indent * 3}data in #{pattern_parts.join(", ")}"
+        end
       end
 
       fact[:resolver].each_line do |line|
