@@ -17,7 +17,7 @@ RSpec.describe "Entity Facts" do
     let(:input) { {} }
 
     it "returns no values for per_entity facts, but does add a hash for the module despite containing no facts" do
-      expected_output = {}
+      expected_output = {num_eligible_applicants: 0}
       expect(results[:applicant_facts]).to eq(expected_output)
     end
   end
@@ -42,7 +42,8 @@ RSpec.describe "Entity Facts" do
       expected_output = {
         income: {0 => 48, 1 => 380},
         age: {0 => 101, 1 => 46},
-        eligible: {0 => true, 1 => false}
+        eligible: {0 => true, 1 => false},
+        num_eligible_applicants: 1
       }
       expect(results[:applicant_facts]).to eq(expected_output)
     end
@@ -73,7 +74,8 @@ RSpec.describe "Entity Facts" do
       expected_output = {
         income: {0 => 99, 1 => bad_fact_matcher},
         age: {0 => bad_fact_matcher, 1 => 101},
-        eligible: {0 => true, 1 => true}
+        eligible: {0 => true, 1 => true},
+        num_eligible_applicants: 2
       }
       expect(results[:applicant_facts]).to match(expected_output)
     end
