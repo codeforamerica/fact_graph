@@ -120,6 +120,7 @@ class GraphState
     # Build fact definition
     fact_args = []
     fact_args << "per_entity: :#{fact[:per_entity]}" if fact[:per_entity]
+    fact_args << "allow_unmet_dependencies: true" if fact[:allow_unmet_dependencies]
 
     fact_line = "#{indent}fact :#{fact[:name]}"
     fact_line += ", #{fact_args.join(", ")}" if fact_args.any?

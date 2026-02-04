@@ -49,6 +49,11 @@ class AddFact < MCP::Tool
       constant_value: {
         type: "string",
         description: "If this is a constant, provide the value instead of inputs/resolver"
+      },
+      allow_unmet_dependencies: {
+        type: "boolean",
+        description: "If true, resolver runs even when dependencies have errors. " \
+                     "Use for short-circuit evaluation or aggregating partial results."
       }
     },
     required: ["name", "module_name"]
@@ -56,7 +61,7 @@ class AddFact < MCP::Tool
 
   class << self
     def call(name:, module_name:, inputs: nil, dependencies: nil, resolver: nil,
-             per_entity: nil, constant_value: nil, server_context:)
+             per_entity: nil, constant_value: nil, allow_unmet_dependencies: nil, server_context:)
       graph_state = server_context[:graph_state]
 
       fact_def = {
@@ -66,7 +71,8 @@ class AddFact < MCP::Tool
         dependencies: dependencies || [],
         resolver: resolver,
         per_entity: per_entity,
-        constant_value: constant_value
+        constant_value: constant_value,
+        allow_unmet_dependencies: allow_unmet_dependencies
       }
 
       graph_state.add_fact(fact_def)

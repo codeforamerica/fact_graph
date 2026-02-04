@@ -41,7 +41,7 @@ module Resources
     MCP::ResourceTemplate.new(
       uri_template: "factgraph://examples/{name}",
       name: "example",
-      description: "A specific example (simple_income, snap_benefits, household_members, tax_credit)",
+      description: "A specific example (simple_income, snap_benefits, household_members, tax_credit, progressive_screening)",
       mime_type: "text/markdown"
     )
   ]
@@ -395,6 +395,144 @@ module Resources
           end
         end
       RUBY
+    },
+    "progressive_screening" => {
+      title: "Progressive Screening with allow_unmet_dependencies",
+      description: "Early eligibility screening that short-circuits when ineligibility is determined",
+      patterns: ["allow_unmet_dependencies", "short-circuit evaluation", "progressive data collection", "error handling"],
+      policy: <<~POLICY,
+        Benefits screening with progressive data collection:
+
+        Phase 1 - Income screening:
+        - If gross income exceeds 200% FPL, immediately ineligible
+        - No need to collect additional details
+
+        Phase 2 - Per-member data (only if income-eligible):
+        - Collect age and citizenship for each member
+        - Members can be individually ineligible without blocking others
+
+        This demonstrates:
+        - `allow_unmet_dependencies: true` parameter on fact definition
+        - Checking for error hashes in resolver: `value in { fact_bad_inputs:, fact_dependency_unmet: }`
+        - Returning `data_errors` to propagate errors when needed
+        - Short-circuiting to avoid unnecessary data collection
+      POLICY
+      code: <<~RUBY
+        class ProgressiveScreeningFacts < FactGraph::Graph
+          constant(:income_limit_percentage) { 200 }
+          constant(:fpl_single) { 1255 }
+
+          # Phase 1: Quick income screen
+          fact :income_eligible do
+            input :gross_monthly_income do
+              Dry::Schema.Params { required(:gross_monthly_income).value(:integer, gteq?: 0) }
+            end
+
+            input :household_size do
+              Dry::Schema.Params { required(:household_size).value(:integer, gteq?: 1) }
+            end
+
+            dependency :fpl_single
+            dependency :income_limit_percentage
+
+            proc do
+              data in input: { gross_monthly_income:, household_size: },
+                     dependencies: { fpl_single:, income_limit_percentage: }
+              # Simplified FPL calculation
+              fpl = fpl_single + ((household_size - 1) * 450)
+              limit = (fpl * income_limit_percentage) / 100
+              gross_monthly_income <= limit
+            end
+          end
+
+          # Per-member age input (only collected if income_eligible)
+          fact :age, per_entity: :members do
+            input :age, per_entity: true do
+              Dry::Schema.Params { required(:age).value(:integer, gteq?: 0) }
+            end
+
+            proc { data[:input][:age] }
+          end
+
+          # Per-member citizenship input
+          fact :is_citizen, per_entity: :members do
+            input :is_citizen, per_entity: true do
+              Dry::Schema.Params { required(:is_citizen).value(:bool) }
+            end
+
+            proc { data[:input][:is_citizen] }
+          end
+
+          # Per-member eligibility - uses allow_unmet_dependencies for short-circuit
+          fact :member_eligible, per_entity: :members, allow_unmet_dependencies: true do
+            dependency :age
+            dependency :is_citizen
+
+            proc do
+              data in dependencies: { age:, is_citizen: }
+
+              # Check if dependencies have errors (missing input)
+              age_error = age in { fact_bad_inputs:, fact_dependency_unmet: }
+              citizen_error = is_citizen in { fact_bad_inputs:, fact_dependency_unmet: }
+
+              # Can short-circuit on citizenship alone
+              if is_citizen == false
+                false  # Definitely ineligible, don't need age
+              elsif age.is_a?(Integer) && age >= 65
+                false  # Definitely ineligible (for this example)
+              elsif age_error || citizen_error
+                data_errors  # Still need more data
+              else
+                true  # All criteria met
+              end
+            end
+          end
+
+          # Aggregate: count eligible members
+          # Uses allow_unmet_dependencies to handle partial per-entity results
+          fact :eligible_member_count, allow_unmet_dependencies: true do
+            dependency :member_eligible
+
+            proc do
+              member_results = data[:dependencies][:member_eligible]
+
+              # member_eligible is a hash of {entity_id => true/false/error_hash}
+              if member_results.is_a?(Hash)
+                member_results.values.count { |v| v == true }
+              else
+                0
+              end
+            end
+          end
+
+          # Final eligibility combines income check and member count
+          fact :household_eligible, allow_unmet_dependencies: true do
+            dependency :income_eligible
+            dependency :eligible_member_count
+
+            proc do
+              data in dependencies: { income_eligible:, eligible_member_count: }
+
+              # Check for errors
+              income_error = income_eligible in { fact_bad_inputs:, fact_dependency_unmet: }
+              count_error = eligible_member_count in { fact_bad_inputs:, fact_dependency_unmet: }
+
+              # Short-circuit: if income ineligible, done
+              if income_eligible == false
+                false
+              elsif income_error
+                data_errors  # Need income data first
+              elsif eligible_member_count.is_a?(Integer) && eligible_member_count > 0
+                true  # At least one eligible member
+              elsif count_error
+                data_errors  # Need member data
+              else
+                false  # No eligible members
+              end
+            end
+          end
+        end
+      RUBY
     }
   }
 
@@ -556,9 +694,22 @@ module Resources
 
     ### Graph Classes
 
-    Each `FactGraph::Graph` subclass defines a module of related facts. The module name is derived from the class name:
+    Each `FactGraph::Graph` subclass defines a module of related facts. The module name is derived from the class name (or overridden with `in_module`):
     - `EligibilityFacts` → `:eligibility_facts`
     - `SnapBenefits` → `:snap_benefits`
+
+    **Important:** Facts are registered on the **parent class's** `graph_registry`, not the defining class:
+
+    ```ruby
+    class MyFacts < FactGraph::Graph
+      fact :foo do ... end  # Registered on FactGraph::Graph.graph_registry
+    end
+
+    # Evaluate using the parent class:
+    FactGraph::Evaluator.evaluate(input, graph_class: FactGraph::Graph)
+    ```
+
+    This enables multiple Graph subclasses to share facts while having context-specific differences. Use intermediate classes and mixins for separate registries.
 
     ### Constants
 
@@ -761,24 +912,47 @@ module Resources
     }
     ```
 
-    ### Handling Errors in Resolvers
+    ### Partial Evaluation with `allow_unmet_dependencies`
 
-    Use `allow_unmet_dependencies: true` to receive errors and handle them:
+    By default, if any input fails validation or any dependency returns an error, the resolver proc does NOT run - the fact returns an error hash instead.
+
+    Use `allow_unmet_dependencies: true` as a **parameter to the fact** (not a method call) to make the resolver run even with errors:
 
     ```ruby
-    fact :flexible_check, allow_unmet_dependencies: true do
-      dependency :might_fail
+    fact :early_eligibility_check, allow_unmet_dependencies: true do
+      dependency :income
+      dependency :age
 
       proc do
-        dep = data[:dependencies][:might_fail]
-        if dep.is_a?(Hash) && dep[:fact_bad_inputs]
-          :default_value  # Graceful fallback
+        data in dependencies: { income:, age: }
+
+        # Check if dependencies are error hashes using pattern matching
+        income_error = income in { fact_bad_inputs:, fact_dependency_unmet: }
+        age_error = age in { fact_bad_inputs:, fact_dependency_unmet: }
+
+        # Can determine ineligibility from income alone
+        if income.is_a?(Integer) && income > 100_000
+          false  # Definitely ineligible, don't need age
+        elsif age.is_a?(Integer) && age < 18
+          false  # Definitely ineligible, don't need income
+        elsif income_error || age_error
+          data_errors  # Can't determine yet, propagate errors
         else
-          dep > 100
+          true  # Both present and within bounds
         end
       end
     end
     ```
+
+    **Key behaviors:**
+    - **Error detection**: Check if a value is an error with: `value in { fact_bad_inputs:, fact_dependency_unmet: }`
+    - **Error propagation**: Return `data_errors` from the resolver to propagate errors to dependent facts
+    - **Short-circuit evaluation**: Return a definite result (true/false) when you have enough info, even if other inputs are missing
+
+    **Use cases:**
+    - Progressive data collection (determine ineligibility early without collecting all data)
+    - Aggregating per-entity results where some entities may have errors
+    - Short-circuit evaluation to avoid unnecessary questions
 
     ## Complete Examples
 
@@ -787,6 +961,7 @@ module Resources
     - `factgraph://examples/snap_benefits` - Multi-factor eligibility
     - `factgraph://examples/household_members` - Per-entity with aggregation
     - `factgraph://examples/tax_credit` - Phase-in/phase-out calculations
+    - `factgraph://examples/progressive_screening` - Short-circuit evaluation with `allow_unmet_dependencies`
 
     ## Best Practices
 
