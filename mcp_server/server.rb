@@ -25,6 +25,7 @@ require_relative "lib/tools/run_test_cases"
 require_relative "lib/tools/list_test_cases"
 require_relative "lib/tools/clear_graph"
 require_relative "lib/tools/get_required_inputs"
+require_relative "lib/tools/add_graph_context"
 
 # Initialize graph state
 graph_state = GraphState.new
@@ -44,7 +45,8 @@ server = MCP::Server.new(
     RunTestCases,
     ListTestCases,
     ClearGraph,
-    GetRequiredInputs
+    GetRequiredInputs,
+    AddGraphContext
   ],
   resources: Resources.all_resources,
   server_context: {

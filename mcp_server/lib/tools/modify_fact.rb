@@ -49,6 +49,10 @@ class ModifyFact < MCP::Tool
       allow_unmet_dependencies: {
         type: "boolean",
         description: "If true, resolver runs even when dependencies have errors"
+      },
+      graph_context: {
+        type: "string",
+        description: "Move fact to a specific graph context, or set to null to make shared"
       }
     },
     required: ["name", "module_name"]
@@ -56,7 +60,7 @@ class ModifyFact < MCP::Tool
 
   class << self
     def call(name:, module_name:, inputs: nil, dependencies: nil, resolver: nil,
-             constant_value: nil, allow_unmet_dependencies: nil, server_context:)
+             constant_value: nil, allow_unmet_dependencies: nil, graph_context: nil, server_context:)
       graph_state = server_context[:graph_state]
 
       fact = graph_state.get_fact(name, module_name)
@@ -72,6 +76,7 @@ class ModifyFact < MCP::Tool
       updates[:dependencies] = dependencies if dependencies
       updates[:resolver] = resolver if resolver
       updates[:allow_unmet_dependencies] = allow_unmet_dependencies unless allow_unmet_dependencies.nil?
+      updates[:graph_context] = graph_context if graph_context
 
       if constant_value
         updates[:constant_value] = constant_value

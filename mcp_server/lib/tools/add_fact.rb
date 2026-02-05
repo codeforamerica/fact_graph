@@ -54,6 +54,11 @@ class AddFact < MCP::Tool
         type: "boolean",
         description: "If true, resolver runs even when dependencies have errors. " \
                      "Use for short-circuit evaluation or aggregating partial results."
+      },
+      graph_context: {
+        type: "string",
+        description: "Graph context for multi-graph support (e.g., 'co_2025', 'nj_2024'). " \
+                     "If not provided, fact is shared across all contexts."
       }
     },
     required: ["name", "module_name"]
@@ -61,7 +66,8 @@ class AddFact < MCP::Tool
 
   class << self
     def call(name:, module_name:, inputs: nil, dependencies: nil, resolver: nil,
-             per_entity: nil, constant_value: nil, allow_unmet_dependencies: nil, server_context:)
+             per_entity: nil, constant_value: nil, allow_unmet_dependencies: nil,
+             graph_context: nil, server_context:)
       graph_state = server_context[:graph_state]
 
       fact_def = {
@@ -72,14 +78,16 @@ class AddFact < MCP::Tool
         resolver: resolver,
         per_entity: per_entity,
         constant_value: constant_value,
-        allow_unmet_dependencies: allow_unmet_dependencies
+        allow_unmet_dependencies: allow_unmet_dependencies,
+        graph_context: graph_context
       }
 
       graph_state.add_fact(fact_def)
 
+      context_msg = graph_context ? " (context: #{graph_context})" : " (shared)"
       MCP::Tool::Response.new([{
         type: "text",
-        text: "Added fact '#{name}' to module '#{module_name}'"
+        text: "Added fact '#{name}' to module '#{module_name}'#{context_msg}"
       }])
     end
   end

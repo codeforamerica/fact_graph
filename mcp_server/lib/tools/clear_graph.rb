@@ -20,13 +20,14 @@ class ClearGraph < MCP::Tool
 
       fact_count = graph_state.facts.length
       test_count = graph_state.test_cases.length
+      context_count = graph_state.graph_contexts.length
+
+      graph_state.clear(keep_test_cases: keep_test_cases)
 
       if keep_test_cases
-        graph_state.facts.clear
-        message = "Cleared #{fact_count} facts (kept #{test_count} test cases)"
+        message = "Cleared #{fact_count} facts and #{context_count} graph contexts (kept #{test_count} test cases)"
       else
-        graph_state.clear
-        message = "Cleared #{fact_count} facts and #{test_count} test cases"
+        message = "Cleared #{fact_count} facts, #{context_count} graph contexts, and #{test_count} test cases"
       end
 
       MCP::Tool::Response.new([{
