@@ -26,17 +26,17 @@ class FactGraph::Fact
 
   def dependency_facts
     dependencies.each_with_object({}) do |values, result_hash|
-      fact_name, module_name = values
-      fact = graph[module_name][fact_name]
-      raise "#{name}: could not find dependency #{fact_name} in module #{module_name}" if fact.nil?
+      dependency_fact_name, dependency_module_name = values
+      dependency_fact = graph[dependency_module_name][dependency_fact_name]
+      raise "#{name}: could not find dependency #{dependency_fact_name} in module #{dependency_module_name}" if dependency_fact.nil?
 
-      if fact.is_a? FactGraph::Fact
-        result_hash[fact_name] = fact
-      elsif fact.is_a? Hash
-        if entity_id
-          result_hash[fact_name] = fact[entity_id]
+      if dependency_fact.is_a? FactGraph::Fact
+        result_hash[dependency_fact_name] = dependency_fact
+      elsif dependency_fact.is_a? Hash
+        if per_entity
+          result_hash[dependency_fact_name] = dependency_fact[entity_id]
         else
-          result_hash[fact_name] = fact
+          result_hash[dependency_fact_name] = dependency_fact
         end
       end
     end
