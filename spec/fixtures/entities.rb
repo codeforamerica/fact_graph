@@ -40,4 +40,13 @@ class ApplicantFacts < FactGraph::Graph
       end
     end
   end
+
+  fact :num_eligible_applicants do
+    dependency :eligible
+
+    proc do
+      data in dependencies: { eligible: }
+      eligible.values.count { |v| v == true }
+    end
+  end
 end
