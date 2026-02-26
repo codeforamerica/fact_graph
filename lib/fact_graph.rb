@@ -54,6 +54,17 @@ module FactGraph
         end
       end
 
+      def fact_definitions(module_filter = nil)
+        graph = {}
+        filter_graph(module_filter).each do |fact_kwargs|
+          fact_kwargs in {module_name:, name:}
+          graph[module_name] ||= {}
+          fact = FactGraph::Fact.new(graph:, **fact_kwargs)
+          graph[module_name][name] = fact
+        end
+        graph
+      end
+
       def prepare_fact_objects(input, module_filter = nil)
         graph = {}
         filter_graph(module_filter).map do |fact_kwargs|
