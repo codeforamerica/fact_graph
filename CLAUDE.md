@@ -29,6 +29,18 @@ FactGraph is a Ruby gem for declarative fact computation with dependency resolut
 - `dependency :fact_name, from: :module_name` - Declare dependency on another fact
 - A resolver proc that computes the fact value using `data` (a DataContainer)
 
+**Input Validation** - Inputs use [Dry::Schema](https://dry-rb.org/gems/dry-schema/) for validation. Common types:
+
+| Type | Example |
+|------|---------|
+| Integer | `required(:age).value(:integer, gteq?: 0)` |
+| String | `required(:name).value(:string)` |
+| Boolean | `required(:is_citizen).value(:bool)` |
+| Enum | `required(:status).value(:string, included_in?: ["single", "married"])` |
+| Range | `required(:age).value(:integer, gteq?: 0, lteq?: 120)` |
+| Date | `required(:dob).value(:date)` |
+| Optional | `optional(:email).value(:string)` |
+
 **Evaluator** (`lib/fact_graph/evaluator.rb`) - Orchestrates evaluation:
 - `Evaluator.evaluate(input, graph_class:, module_filter:)` - Evaluate all facts
 - `Evaluator.input_errors(results)` - Extract validation errors from results
@@ -47,6 +59,21 @@ FactGraph is a Ruby gem for declarative fact computation with dependency resolut
 fact :income, per_entity: :applicants do
   input :income, per_entity: true do ... end
   proc { data[:input][:income] }
+end
+```
+
+Input structure: `{ applicants: [{ income: 30000 }, { income: 15000 }] }`
+Result structure: `{ my_module: { income: { 0 => 30000, 1 => 15000 } } }`
+
+**Aggregating Per-Entity Results** - A regular (non-per-entity) fact depending on a per-entity fact receives a hash of `{entity_index => value}`:
+```ruby
+fact :eligible_count do
+  dependency :member_eligible  # Gets { 0 => true, 1 => false, ... }
+
+  proc do
+    results = data[:dependencies][:member_eligible]
+    results.values.count { |v| v == true }
+  end
 end
 ```
 
@@ -143,3 +170,21 @@ Use cases:
 - Short-circuit evaluation (determine ineligibility without collecting all data)
 - Aggregating per-entity results where some entities may have errors
 - Progressive/phased data collection where early facts guide which later questions to ask
+
+## MCP Server
+
+The `mcp_server/` directory contains an MCP server for interactively building and testing fact graphs. Start with `mcp_server/start.sh` (configured in `.mcp.json`).
+
+### Resources
+- `factgraph://docs/dsl` - Complete DSL reference with examples
+- `factgraph://examples/{name}` - Working examples: `simple_income`, `snap_benefits`, `household_members`, `tax_credit`, `multi_graph`, `progressive_screening`
+- `factgraph://current/facts` and `factgraph://current/modules` - Current session state
+
+### Key Tools
+- `add_fact` / `modify_fact` / `remove_fact` - Manage facts in session state
+- `evaluate_facts` - Test facts against sample input
+- `validate_code` - Check for syntax and structural errors
+- `export_code` - Generate Ruby code from session state (single_file or per_module)
+- `add_test_case` / `run_test_cases` - Define and run test cases
+- `add_graph_context` - Set up multi-graph contexts for shared + context-specific facts
+- `get_required_inputs` - Trace all input schemas needed for specific modules

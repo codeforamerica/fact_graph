@@ -49,19 +49,20 @@ server = MCP::Server.new(
     AddGraphContext
   ],
   resources: Resources.all_resources,
+  resource_templates: Resources::TEMPLATES,
   server_context: {
     graph_state: graph_state
   }
 )
 
-# Register resource templates
-Resources::TEMPLATES.each do |template|
-  server.resources = server.resources + [template]
-end
-
 # Handle resource reads
-server.resources_read_handler do |uri, server_context|
-  Resources.read(uri, server_context[:graph_state])
+server.resources_read_handler do |params|
+  content = Resources.read(params[:uri], graph_state)
+  if content
+    [{ uri: content.uri, mimeType: content.mime_type, text: content.text }.compact]
+  else
+    []
+  end
 end
 
 # Register prompts

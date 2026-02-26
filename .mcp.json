@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "factgraph": {
-      "command": "/root/fact_graph/mcp_server/start.sh"
+      "command": "mcp_server/start.sh"
     }
   }
 }
