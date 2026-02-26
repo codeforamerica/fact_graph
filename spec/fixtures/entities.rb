@@ -50,3 +50,19 @@ class ApplicantFacts < FactGraph::Graph
     end
   end
 end
+
+class CreditFacts < FactGraph::Graph
+  fact :credit_amounts, per_entity: :applicants do
+    dependency :age, from: :applicant_facts
+    dependency :eligible, from: :applicant_facts
+
+    proc do
+      data in dependencies: { eligible:, age: }
+      if eligible
+        age * 100
+      else
+        0
+      end
+    end
+  end
+end
