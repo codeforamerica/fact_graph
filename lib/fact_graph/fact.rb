@@ -1,7 +1,7 @@
 require "dry/schema"
 
 class FactGraph::Fact
-  attr_accessor :name, :module_name, :resolver, :dependencies, :input_definitions, :graph, :per_entity, :entity_id, :allow_unmet_dependencies
+  attr_accessor :name, :module_name, :resolver, :dependencies, :input_definitions, :graph, :per_entity, :entity_id, :allow_unmet_dependencies, :source_file, :source_line
 
   def initialize(name:, module_name:, graph:, def_proc:, per_entity: nil, entity_id: nil, allow_unmet_dependencies: false)
     @name = name
@@ -12,6 +12,7 @@ class FactGraph::Fact
     @per_entity = per_entity
     @entity_id = entity_id
     @allow_unmet_dependencies = allow_unmet_dependencies
+    @source_file, @source_line = def_proc.source_location
 
     @resolver = instance_eval(&def_proc)
   end
