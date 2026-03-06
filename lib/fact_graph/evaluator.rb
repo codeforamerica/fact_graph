@@ -33,11 +33,20 @@ class FactGraph::Evaluator
         value: result,
         code: fact.resolver.respond_to?(:call) ? fact.resolver.source : fact.resolver,
         dependencies: fact.dependency_facts.map do |dep_fact_name, dep_fact|
-          dep_info = {
-            module: dep_fact.module_name,
-            fact: dep_fact.name,
-          }
-          dep_info[:entity_id] = dep_fact.entity_id if dep_fact.entity_id
+          if dep_fact.is_a? FactGraph::Fact
+            dep_info = {
+              module: dep_fact.module_name,
+              fact: dep_fact.name,
+            }
+            dep_info[:entity_id] = dep_fact.entity_id if dep_fact.entity_id
+          elsif dep_fact.is_a? Hash
+            example_dep_entity_id, example_dep_fact = dep_fact.first
+            dep_info = {
+              module: example_dep_fact&.module_name,
+              fact: example_dep_fact&.name,
+              entity_id: :aggregate
+            }
+          end
           dep_info
         end,
         inputs: fact.input_definitions.keys
@@ -61,9 +70,10 @@ class FactGraph::Evaluator
             result = results[module_name][fact_name]
             metadata[module_name][fact_name] = fact_metadata(fact, result)
           elsif fact.is_a? Hash
+            metadata[module_name][fact_name] = {}
             fact.each do |entity_id, per_entity_fact|
               result = results[module_name][fact_name][entity_id]
-              metadata[module_name][fact_name][entity_id] = fact_metadata(fact, result)
+              metadata[module_name][fact_name][entity_id] = fact_metadata(per_entity_fact, result)
             end
           end
         end
