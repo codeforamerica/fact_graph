@@ -48,6 +48,12 @@ RSpec.describe "Entity Facts" do
       expect(results[:applicant_facts]).to eq(expected_output)
     end
 
+    it "can depend on per-entity facts across modules" do
+      expected_output = {
+        credit_amounts: {0 => 10100, 1 => 0}
+      }
+      expect(results[:credit_facts]).to match(expected_output)
+    end
 
     describe "FactGraph.entity_map" do
       it "returns an entity map that includes a correct map of entity names and ids" do

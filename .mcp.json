@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "factgraph": {
+      "command": "mcp_server/start.sh"
+    }
+  }
+}
