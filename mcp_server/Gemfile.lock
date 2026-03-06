@@ -4,6 +4,7 @@ PATH
     fact_graph (0.1.0)
       activesupport (~> 8.0)
       dry-schema (~> 1.13)
+      method_source
 
 GEM
   remote: https://rubygems.org/
@@ -66,6 +67,7 @@ GEM
     logger (1.7.0)
     mcp (0.6.0)
       json-schema (>= 4.1)
+    method_source (1.1.0)
     minitest (6.0.1)
       prism (~> 1.5)
     prism (1.9.0)
@@ -105,6 +107,7 @@ CHECKSUMS
   json-schema (6.1.0) sha256=6bf70a2cfb6dfd5a06da28093fa8190f324c88eabd36a7f47097f227321dc702
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
   mcp (0.6.0) sha256=e6c15bd31c5d8c4a6aea2775c6a7bf00059d67faff2d04e2f9ceb53a79462a1a
+  method_source (1.1.0)
   minitest (6.0.1) sha256=7854c74f48e2e975969062833adc4013f249a4b212f5e7b9d5c040bf838d54bb
   prism (1.9.0) sha256=7b530c6a9f92c24300014919c9dcbc055bf4cdf51ec30aed099b06cd6674ef85
   public_suffix (7.0.2) sha256=9114090c8e4e7135c1fd0e7acfea33afaab38101884320c65aaa0ffb8e26a857
