@@ -4,6 +4,7 @@ PATH
     fact_graph (0.1.0)
       activesupport (~> 8.0)
       dry-schema (~> 1.13)
+      method_source
 
 GEM
   remote: https://rubygems.org/
@@ -74,6 +75,7 @@ GEM
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
     logger (1.7.0)
+    method_source (1.1.0)
     minitest (5.25.5)
     mutex_m (0.3.0)
     parallel (1.27.0)

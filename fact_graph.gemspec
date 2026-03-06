@@ -37,6 +37,7 @@ Gem::Specification.new do |spec|
   # spec.add_dependency "example-gem", "~> 1.0"
   spec.add_dependency "activesupport", "~> 8.0"
   spec.add_dependency "dry-schema", "~> 1.13"
+  spec.add_dependency "method_source"
 
   spec.add_development_dependency "debug"
 

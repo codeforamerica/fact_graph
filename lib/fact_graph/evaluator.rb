@@ -1,4 +1,5 @@
 require "active_support/core_ext/string"
+require "method_source"
 
 class FactGraph::Evaluator
   class << self
@@ -23,6 +24,51 @@ class FactGraph::Evaluator
         end
       end
       results
+    end
+
+    def fact_metadata(fact, result)
+      metadata = {
+        module: fact.module_name,
+        fact: fact.name,
+        value: result,
+        code: fact.resolver.respond_to?(:call) ? fact.resolver.source : fact.resolver,
+        dependencies: fact.dependency_facts.map do |dep_fact_name, dep_fact|
+          dep_info = {
+            module: dep_fact.module_name,
+            fact: dep_fact.name,
+          }
+          dep_info[:entity_id] = dep_fact.entity_id if dep_fact.entity_id
+          dep_info
+        end,
+        inputs: fact.input_definitions.keys
+      }
+      metadata[:entity_id] = fact.entity_id if fact.entity_id
+      metadata
+    end
+
+    # Placeholder until we move values/errors back onto Fact objects
+    def evaluate_with_metadata(input, graph_class: nil, module_filter: nil)
+      graph_class ||= FactGraph::Graph
+      graph = graph_class.prepare_fact_objects(input, module_filter)
+
+      results = graph.transform_values { |_| {} }
+      metadata = graph.transform_values { |_| {} }
+      graph.each do |module_name, module_hash|
+        module_hash.each do |fact_name, fact|
+          call_fact(fact, input, results)
+
+          if fact.is_a? FactGraph::Fact
+            result = results[module_name][fact_name]
+            metadata[module_name][fact_name] = fact_metadata(fact, result)
+          elsif fact.is_a? Hash
+            fact.each do |entity_id, per_entity_fact|
+              result = results[module_name][fact_name][entity_id]
+              metadata[module_name][fact_name][entity_id] = fact_metadata(fact, result)
+            end
+          end
+        end
+      end
+      metadata
     end
 
     def key_matches_key_path?(key, key_path)
