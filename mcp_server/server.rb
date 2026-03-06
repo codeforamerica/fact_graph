@@ -23,6 +23,7 @@ require_relative "lib/tools/export_code"
 require_relative "lib/tools/add_test_case"
 require_relative "lib/tools/run_test_cases"
 require_relative "lib/tools/list_test_cases"
+require_relative "lib/tools/remove_test_case"
 require_relative "lib/tools/clear_graph"
 require_relative "lib/tools/get_required_inputs"
 require_relative "lib/tools/add_graph_context"
@@ -44,6 +45,7 @@ server = MCP::Server.new(
     AddTestCase,
     RunTestCases,
     ListTestCases,
+    RemoveTestCase,
     ClearGraph,
     GetRequiredInputs,
     AddGraphContext
