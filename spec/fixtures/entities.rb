@@ -49,4 +49,13 @@ class ApplicantFacts < FactGraph::Graph
       eligible.values.count { |v| v == true }
     end
   end
+
+  fact :total_applicant_income do
+    dependency :income
+
+    proc do
+      data in dependencies: { income: }
+      income.sum { |k, v| v }
+    end
+  end
 end
