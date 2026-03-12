@@ -1,4 +1,5 @@
 require "dry/schema"
+require "fact_graph/fact_errors"
 
 class FactGraph::Fact
   attr_accessor :name, :module_name, :resolver, :dependencies, :input_definitions, :graph, :per_entity, :entity_id, :allow_unmet_dependencies
@@ -35,19 +36,19 @@ class FactGraph::Fact
       if dependency_fact.is_a? FactGraph::Fact
         result_hash[dependency_fact_name] = dependency_fact
       elsif dependency_fact.is_a? Hash
-        if per_entity
+        result_hash[dependency_fact_name] = if per_entity
           # Take only the fact corresponding to our entity ID as the dependency
-          result_hash[dependency_fact_name] = dependency_fact[entity_id]
+          dependency_fact[entity_id]
         else
           # Take the whole hash of {entity IDs => facts} as the dependency
-          result_hash[dependency_fact_name] = dependency_fact
+          dependency_fact
         end
       end
     end
   end
 
   def input(name, **kwargs, &schema_blk)
-    input_definitions[name] = kwargs.merge({ validator: schema_blk.call })
+    input_definitions[name] = kwargs.merge({validator: schema_blk.call})
   end
 
   def filter_input(input)
@@ -89,8 +90,8 @@ class FactGraph::Fact
   def call(input, results)
     if per_entity
       return results.dig(module_name, name, entity_id) if results.dig(module_name, name, entity_id)
-    else
-      return results.dig(module_name, name) if results.dig(module_name, name)
+    elsif results.dig(module_name, name)
+      return results.dig(module_name, name)
     end
 
     results[module_name] ||= {}
@@ -116,15 +117,15 @@ class FactGraph::Fact
       }
     )
 
-    errors = {
+    errors = FactGraph::FactErrors.new(
       fact_bad_inputs: {},
       fact_dependency_unmet: Hash.new { |h, key| h[key] = [] }
-    }
+    )
 
     validate_input(data.data[:input], errors)
 
     data.data[:dependencies].each do |key, dependency|
-      if dependency in { fact_dependency_unmet: Hash } | { fact_bad_inputs: Array }
+      if dependency in {fact_dependency_unmet: Hash} | {fact_bad_inputs: Array}
         bad_module = dependency_facts[key].module_name
         errors[:fact_dependency_unmet][bad_module] << key
       end

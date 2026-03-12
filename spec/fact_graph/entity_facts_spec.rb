@@ -1,10 +1,3 @@
-def bad_fact_matcher
-  {
-    fact_bad_inputs: anything,
-    fact_dependency_unmet: anything
-  }
-end
-
 RSpec.describe "Entity Facts" do
   before do
     FactGraph::Graph.graph_registry = []
@@ -48,7 +41,6 @@ RSpec.describe "Entity Facts" do
       expect(results[:applicant_facts]).to eq(expected_output)
     end
 
-
     describe "FactGraph.entity_map" do
       it "returns an entity map that includes a correct map of entity names and ids" do
         expect(FactGraph::Graph.entity_map(input)).to eq({applicants: [0, 1]})
@@ -61,7 +53,7 @@ RSpec.describe "Entity Facts" do
       {
         applicants: [
           {
-            income: 99,
+            income: 99
           },
           {
             age: 101
@@ -72,8 +64,8 @@ RSpec.describe "Entity Facts" do
 
     it "returns a value for all entities" do
       expected_output = {
-        income: {0 => 99, 1 => bad_fact_matcher},
-        age: {0 => bad_fact_matcher, 1 => 101},
+        income: {0 => 99, 1 => FactGraph::FactErrors},
+        age: {0 => FactGraph::FactErrors, 1 => 101},
         eligible: {0 => true, 1 => true},
         num_eligible_applicants: 2
       }

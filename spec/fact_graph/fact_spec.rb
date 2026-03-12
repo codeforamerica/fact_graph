@@ -34,7 +34,7 @@ RSpec.describe FactGraph::Fact do
               zip_code: "10123"
             }
           },
-          {fact_bad_inputs: {}, fact_dependency_unmet: {}}
+          FactGraph::FactErrors.new(fact_bad_inputs: {}, fact_dependency_unmet: {})
         )
         graph[:contact_info][:formatted_address].call(input, {})
       end

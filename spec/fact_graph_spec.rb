@@ -111,12 +111,12 @@ RSpec.describe FactGraph do
             squared_scale: 25
           },
           circle_facts: {
-            areas: {
+            areas: FactGraph::FactErrors.new(
               fact_bad_inputs: {
                 [:circles] => Set.new(["must be an array"])
               },
               fact_dependency_unmet: {}
-            }
+            )
           },
           simple_facts: {
             two: 2
