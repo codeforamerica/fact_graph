@@ -104,7 +104,9 @@ class FactGraph::Fact
       if dependency.is_a? FactGraph::Fact
         dependency.call(input, results)
       elsif dependency.is_a? Hash
-        dependency.to_h { |k, v| [k, v.call(input, results)] }
+        dependency
+          .transform_values { |fact| fact.call(input, results) }
+          .filter { |_entity_id, result| !(result in { fact_dependency_unmet:, fact_bad_inputs:}) }
       end
     end
 
