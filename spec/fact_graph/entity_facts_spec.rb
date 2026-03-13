@@ -84,17 +84,16 @@ RSpec.describe "Entity Facts" do
   describe "aggregate facts dependency filtering" do
     context "when all dependency facts have good values" do
       let(:input) { {applicants: [{income: 99}, {income: 101}]} }
-      it "aggregates only the good dependencies" do
+      it "aggregates all dependencies successfully" do
         expect(results[:applicant_facts][:total_applicant_income]).to eq 200
       end
     end
 
     context "when some dependency facts have bad values" do
       let(:input) { {applicants: [{income: 99}, {age: 101}]} }
-      it "aggregates all dependencies successfully" do
+      it "aggregates only the good dependencies" do
         expect(results[:applicant_facts][:total_applicant_income]).to eq 99
       end
     end
   end
-
 end
