@@ -10,7 +10,7 @@ gem "rake", "~> 13.0"
 
 gem "rspec", "~> 3.0"
 
-gem "standard"
+gem "standard", ">= 1.35.1"
 
 # Necessary for debugging in RubyMine
 gem "mutex_m"
