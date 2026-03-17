@@ -35,6 +35,24 @@ module FactGraph
       end
       alias_method :constant, :fact
 
+      # Syntactic sugar for defining facts that just wrap a single input
+      # (so that input validation is not duplicated and inputs can be treated as dependencies)
+      def input(name_or_key_path, **kwargs, &validation_proc)
+        top_level_input_key = name_or_key_path.is_a?(Array) ? name_or_key_path.first : name_or_key_path
+        name = name_or_key_path.is_a?(Array) ? name_or_key_path.last : name_or_key_path
+        def_proc = proc do
+          input top_level_input_key, per_entity: kwargs.key?(:per_entity) do
+            Dry::Schema.Params(&validation_proc)
+          end
+
+          proc do
+            puts data
+            data[:input].dig(*name_or_key_path)
+          end
+        end
+        superclass.graph_registry << {module_name:, name:, def_proc:, **kwargs}
+      end
+
       def entity_ids(input, entity_name)
         # replace this with a different method of getting entity IDs if we e.g. switch to hashes of ID=>entity_hash
         if input.key? entity_name

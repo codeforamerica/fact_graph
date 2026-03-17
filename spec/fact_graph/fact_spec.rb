@@ -99,4 +99,27 @@ RSpec.describe FactGraph::Fact do
       end
     end
   end
+
+  describe "nested input facts" do
+    let(:graph) { FactGraph::Graph.prepare_fact_objects(input) }
+    let(:input) do
+      {
+        snail_mail_opt_in: false,
+        street_address: {
+          street_number: 1,
+          street_name: "Sesame St",
+          city: "New York",
+          state: "New York",
+          zip_code: "10123",
+          county: "New York"
+        }
+      }
+    end
+
+    it "can use the input shortcut to describe facts with nested input" do
+      results = {}
+      graph[:contact_info][:street_number].call(input, results)
+      expect(results[:contact_info][:street_number]).to eq 1
+    end
+  end
 end

@@ -1,26 +1,10 @@
 class ApplicantFacts < FactGraph::Graph
-  fact :income, per_entity: :applicants do
-    input :income, per_entity: true do
-      Dry::Schema.Params do
-        required(:income).value(:integer)
-      end
-    end
-
-    proc do
-      data[:input][:income]
-    end
+  input :income, per_entity: :applicants do
+    required(:income).value(:integer)
   end
 
-  fact :age, per_entity: :applicants do
-    input :age, per_entity: true do
-      Dry::Schema.Params do
-        required(:age).value(:integer)
-      end
-    end
-
-    proc do
-      data[:input][:age]
-    end
+  input :age, per_entity: :applicants do
+    required(:age).value(:integer)
   end
 
   fact :eligible, per_entity: :applicants, allow_unmet_dependencies: true do
