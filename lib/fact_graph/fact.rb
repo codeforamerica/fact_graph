@@ -49,6 +49,11 @@ class FactGraph::Fact
   def input(name, **kwargs, &validation_blk)
     schema_blk = Dry::Schema.Params(&validation_blk)
     input_definitions[name] = kwargs.merge({ validator: schema_blk })
+
+    # TODO: Make this take a key path instead of just a name to enable simple nested input
+    proc do
+      data.dig(:input, name)
+    end
   end
 
   def filter_input(input)

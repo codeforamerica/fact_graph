@@ -3,19 +3,11 @@ class ApplicantFacts < FactGraph::Graph
     input :income, per_entity: true do
       required(:income).value(:integer)
     end
-
-    proc do
-      data[:input][:income]
-    end
   end
 
   fact :age, per_entity: :applicants do
     input :age, per_entity: true do
       required(:age).value(:integer)
-    end
-
-    proc do
-      data[:input][:age]
     end
   end
 
