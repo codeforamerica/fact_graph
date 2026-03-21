@@ -1,14 +1,12 @@
 class ContactInfo < FactGraph::Graph
   fact :formatted_address do
     input :street_address do
-      Dry::Schema.Params do
-        required(:street_address).hash do
-          required(:street_number).value(:integer)
-          required(:street_name).value(:string)
-          required(:city).value(:string)
-          required(:state).value(:string)
-          required(:zip_code).value(:string)
-        end
+      required(:street_address).hash do
+        required(:street_number).value(:integer)
+        required(:street_name).value(:string)
+        required(:city).value(:string)
+        required(:state).value(:string)
+        required(:zip_code).value(:string)
       end
     end
 
@@ -21,15 +19,11 @@ class ContactInfo < FactGraph::Graph
 
   fact :can_receive_mail, allow_unmet_dependencies: true do
     input :snail_mail_opt_in do
-      Dry::Schema.Params do
-        required(:snail_mail_opt_in).value(:bool)
-      end
+      required(:snail_mail_opt_in).value(:bool)
     end
 
     input :unused_input do
-      Dry::Schema.Params do
-        required(:unused_input).value(:bool)
-      end
+      required(:unused_input).value(:bool)
     end
 
     dependency :formatted_address

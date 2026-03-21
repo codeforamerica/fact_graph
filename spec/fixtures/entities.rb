@@ -1,9 +1,7 @@
 class ApplicantFacts < FactGraph::Graph
   fact :income, per_entity: :applicants do
     input :income, per_entity: true do
-      Dry::Schema.Params do
-        required(:income).value(:integer)
-      end
+      required(:income).value(:integer)
     end
 
     proc do
@@ -13,9 +11,7 @@ class ApplicantFacts < FactGraph::Graph
 
   fact :age, per_entity: :applicants do
     input :age, per_entity: true do
-      Dry::Schema.Params do
-        required(:age).value(:integer)
-      end
+      required(:age).value(:integer)
     end
 
     proc do

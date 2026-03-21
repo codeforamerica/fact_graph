@@ -46,8 +46,9 @@ class FactGraph::Fact
     end
   end
 
-  def input(name, **kwargs, &schema_blk)
-    input_definitions[name] = kwargs.merge({ validator: schema_blk.call })
+  def input(name, **kwargs, &validation_blk)
+    schema_blk = Dry::Schema.Params(&validation_blk)
+    input_definitions[name] = kwargs.merge({ validator: schema_blk })
   end
 
   def filter_input(input)
