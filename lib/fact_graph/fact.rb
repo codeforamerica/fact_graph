@@ -51,6 +51,7 @@ class FactGraph::Fact
     in String | Symbol
       name_or_keypath
     in Array
+      # if there are multiple inputs taken from the same top-level key, they must be required in the same .hash schema
       name_or_keypath.first
     else
       raise ArgumentError.new("input must be called with a name (String) or key path (Array)")
