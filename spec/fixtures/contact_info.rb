@@ -17,6 +17,14 @@ class ContactInfo < FactGraph::Graph
     end
   end
 
+  fact :street_number do
+    input [:street_address, :street_number] do
+      required(:street_address).hash do
+        required(:street_number).value(:integer)
+      end
+    end
+  end
+
   fact :can_receive_mail, allow_unmet_dependencies: true do
     input :snail_mail_opt_in do
       required(:snail_mail_opt_in).value(:bool)

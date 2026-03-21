@@ -46,13 +46,20 @@ class FactGraph::Fact
     end
   end
 
-  def input(name, **kwargs, &validation_blk)
+  def input(name_or_keypath, **kwargs, &validation_blk)
+    name = case name_or_keypath
+    in String | Symbol
+      name_or_keypath
+    in Array
+      name_or_keypath.first
+    else
+      raise ArgumentError.new("input must be called with a name (String) or key path (Array)")
+    end
     schema_blk = Dry::Schema.Params(&validation_blk)
     input_definitions[name] = kwargs.merge({ validator: schema_blk })
 
-    # TODO: Make this take a key path instead of just a name to enable simple nested input
     proc do
-      data.dig(:input, name)
+      data.dig(:input, *name_or_keypath)
     end
   end
 
@@ -112,7 +119,7 @@ class FactGraph::Fact
       elsif dependency.is_a? Hash
         dependency
           .transform_values { |fact| fact.call(input, results) }
-          .filter { |_entity_id, result| !(result in { fact_dependency_unmet:, fact_bad_inputs:}) }
+          .filter { |_entity_id, result| !(result in { fact_dependency_unmet:, fact_bad_inputs: }) }
       end
     end
 
