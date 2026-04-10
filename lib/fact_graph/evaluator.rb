@@ -13,7 +13,7 @@ class FactGraph::Evaluator
       end
     end
 
-    def evaluate(input, graph_class: nil,  module_filter: nil)
+    def evaluate(input, graph_class: nil, module_filter: nil)
       graph_class ||= FactGraph::Graph
       graph = graph_class.prepare_fact_objects(input, module_filter)
       results = graph.transform_values { |_| {} }
@@ -22,7 +22,7 @@ class FactGraph::Evaluator
           call_fact(fact, input, results)
         end
       end
-      results
+      deep_freeze(results)
     end
 
     def key_matches_key_path?(key, key_path)
@@ -36,11 +36,11 @@ class FactGraph::Evaluator
       when Dry::Schema::Key::Array
         match = key.name == key_path[0].to_s
         match &&= key_path[1].is_a?(Integer) if key_path.count > 1
-        match &&= key_matches_key_path?(key.member, key_path[2..]) if key_path.count > 2
+        match &&= key_matches_key_path?(key.member, key_path.drop(2)) if key_path.count > 2
         match
       when Dry::Schema::Key::Hash
         match = key.name == key_path[0].to_s
-        match &&= key_matches_key_path?(key.members, key_path[1..]) if key_path.count > 1
+        match &&= key_matches_key_path?(key.members, key_path.drop(1)) if key_path.count > 1
         match
       when Dry::Schema::Key
         key.name == key_path[0].to_s && key_path.count == 1
@@ -49,7 +49,7 @@ class FactGraph::Evaluator
       end
     end
 
-    def facts_using_input(query_input, graph_class: nil,  module_filter: nil)
+    def facts_using_input(query_input, graph_class: nil, module_filter: nil)
       graph_class ||= FactGraph::Graph
       graph = graph_class.prepare_fact_objects(module_filter)
       graph.flat_map do |_, facts|
@@ -62,7 +62,7 @@ class FactGraph::Evaluator
       end
     end
 
-    def facts_with_dependency(query_module_name, query_fact_name, graph_class: nil,  module_filter: nil)
+    def facts_with_dependency(query_module_name, query_fact_name, graph_class: nil, module_filter: nil)
       graph_class ||= FactGraph::Graph
       graph = graph_class.prepare_fact_objects(module_filter)
       graph.flat_map do |_, facts|
@@ -92,7 +92,7 @@ class FactGraph::Evaluator
       errors = {}
       results.each_value do |facts|
         facts.each_value do |result|
-          next unless result in { fact_bad_inputs: }
+          next unless result in {fact_bad_inputs:}
 
           errors.merge!(fact_bad_inputs) do |_bad_input_key_path, old_error_messages, new_error_messages|
             old_error_messages.merge(new_error_messages)
@@ -100,6 +100,19 @@ class FactGraph::Evaluator
         end
       end
       errors
+    end
+
+    private
+
+    def deep_freeze(obj)
+      case obj
+      when Hash then obj.each { |k, v|
+        deep_freeze(k)
+        deep_freeze(v)
+      }
+      when Array, Set then obj.each { |v| deep_freeze(v) }
+      end
+      obj.freeze
     end
   end
 end
