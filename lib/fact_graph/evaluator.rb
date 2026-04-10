@@ -22,7 +22,7 @@ class FactGraph::Evaluator
           call_fact(fact, input, results)
         end
       end
-      results
+      deep_freeze(results)
     end
 
     def key_matches_key_path?(key, key_path)
@@ -100,6 +100,19 @@ class FactGraph::Evaluator
         end
       end
       errors
+    end
+
+    private
+
+    def deep_freeze(obj)
+      case obj
+      when Hash then obj.each { |k, v|
+        deep_freeze(k)
+        deep_freeze(v)
+      }
+      when Array, Set then obj.each { |v| deep_freeze(v) }
+      end
+      obj.freeze
     end
   end
 end
