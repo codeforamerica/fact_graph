@@ -1,10 +1,3 @@
-def bad_fact_matcher
-  {
-    fact_bad_inputs: anything,
-    fact_dependency_unmet: anything
-  }
-end
-
 RSpec.describe "Entity Facts" do
   before do
     FactGraph::Graph.graph_registry = []
@@ -72,8 +65,14 @@ RSpec.describe "Entity Facts" do
 
     it "returns a value for all entities" do
       expected_output = {
-        income: {0 => 99, 1 => bad_fact_matcher},
-        age: {0 => bad_fact_matcher, 1 => 101},
+        income: {
+          0 => 99,
+          1 => Dry::Monads::Failure({fact_bad_inputs: {[:income] => Set.new(["must be an integer"])}, fact_dependency_unmet: {}})
+        },
+        age: {
+          0 => Dry::Monads::Failure({fact_bad_inputs: {[:age] => Set.new(["must be an integer"])}, fact_dependency_unmet: {}}),
+          1 => 101
+        },
         eligible: {0 => true, 1 => true},
         num_eligible_applicants: 2,
         total_applicant_income: 99

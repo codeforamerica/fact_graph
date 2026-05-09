@@ -7,13 +7,13 @@ RSpec.describe FactGraph::DataContainer do
     it "should return :fact_incomplete_definition when data errors is nil" do
       container = described_class.new(data_errors: nil)
 
-      expect(container.data_errors).to eq :fact_incomplete_definition
+      expect(container.data_errors).to eq Dry::Monads::Failure(:fact_incomplete_definition)
     end
 
     it "should return :fact_incomplete_definition when no data errors are passed in" do
       container = described_class.new
 
-      expect(container.data_errors).to eq :fact_incomplete_definition
+      expect(container.data_errors).to eq Dry::Monads::Failure(:fact_incomplete_definition)
     end
 
     it "should return data_errors when it is not nil" do

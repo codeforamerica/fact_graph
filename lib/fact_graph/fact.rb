@@ -3,7 +3,7 @@ require "dry/monads"
 Dry::Schema.load_extensions(:monads)
 
 class FactGraph::Fact
-  include Dry::Monads[:result, :validated, :list, :do]
+  include Dry::Monads[:result]
   attr_accessor :name, :module_name, :resolver, :dependencies, :input_definitions, :graph, :per_entity, :entity_id, :allow_unmet_dependencies
 
   def initialize(name:, module_name:, graph:, def_proc:, per_entity: nil, entity_id: nil, allow_unmet_dependencies: false)
@@ -150,7 +150,7 @@ class FactGraph::Fact
     resolved_errors = nil
 
     data = FactGraph::DataContainer.new(
-      deep_unwrap_successes({
+      FactGraph.deep_unwrap_successes({
         # TODO: Should dependencies be in module hashes to allow fact name collisions across modules?
         dependencies: dependency_evaluation_result,
         input: filtered_input
@@ -163,11 +163,6 @@ class FactGraph::Fact
       resolved_errors = data_errors
     end
 
-    puts "===="
-    puts "FACT NAME: #{name}"
-    puts "RESULTS SO FAR: #{results}"
-    puts "DATA: #{data.data}"
-
     fact_value = resolved_errors || data.instance_exec(&resolver)
     fact_result = fact_value.is_a?(Dry::Monads::Result) ? fact_value : Dry::Monads::Success(fact_value)
 
@@ -176,17 +171,6 @@ class FactGraph::Fact
       results[module_name][name][entity_id] = fact_result
     else
       results[module_name][name] = fact_result
-    end
-  end
-
-  private
-
-  def deep_unwrap_successes(value)
-    case value
-    in Hash then value.transform_values { |v| deep_unwrap_successes(v) }
-    in Dry::Monads::Success(unwrapped) then unwrapped
-    in Dry::Monads::Failure then value
-    else value
     end
   end
 end

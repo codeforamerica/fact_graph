@@ -164,15 +164,18 @@ RSpec.describe FactGraph::Evaluator do
 
       it "freezes error result hashes deeply" do
         error_results = described_class.evaluate({})
-        error = error_results[:math_facts][:squared_scale]
-        expect(error).to be_frozen
-        expect(error[:fact_bad_inputs]).to be_frozen
-        expect(error[:fact_dependency_unmet]).to be_frozen
+        result = error_results[:math_facts][:squared_scale]
+        expect(result).to be_frozen
+        errors = result.failure
+        expect(errors[:fact_bad_inputs]).to be_frozen
+        expect(errors[:fact_dependency_unmet]).to be_frozen
       end
 
       it "freezes sets and their elements within error results" do
         error_results = described_class.evaluate({})
-        error_messages = error_results[:math_facts][:squared_scale][:fact_bad_inputs][[:scale]]
+        result = error_results[:math_facts][:squared_scale]
+        errors = result.failure
+        error_messages = errors[:fact_bad_inputs][[:scale]]
         expect(error_messages).to be_a(Set)
         expect(error_messages).to be_frozen
         error_messages.each { |msg| expect(msg).to be_frozen }

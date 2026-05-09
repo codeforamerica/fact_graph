@@ -10,6 +10,16 @@ require_relative "fact_graph/version"
 module FactGraph
   class ValidationError < StandardError; end
 
+  def self.deep_unwrap_successes(value)
+    # We have to use when instead of in, because dry-monads handles deconstructing Success(an_array) weirdly
+    case value
+    when Hash then value.transform_values { |v| deep_unwrap_successes(v) }
+    when Dry::Monads::Success then deep_unwrap_successes(value.value!)
+    when Dry::Monads::Failure then value
+    else value
+    end
+  end
+
   class Graph
     @graph_registry = []
 

@@ -40,22 +40,22 @@ RSpec.describe FactGraph do
         {
           math_facts: {
             pi: 3.14,
-            squared_scale: {
+            squared_scale: Dry::Monads::Failure({
               fact_bad_inputs: {
                 [:scale] => Set.new(["must be Numeric"])
               },
               fact_dependency_unmet: {}
-            }
+            })
           },
           circle_facts: {
-            areas: {
+            areas: Dry::Monads::Failure({
               fact_bad_inputs: {
                 [:circles] => Set.new(["must be an array"])
               },
               fact_dependency_unmet: {
                 math_facts: [:squared_scale]
               }
-            }
+            })
           },
           simple_facts: {
             two: 2
@@ -74,22 +74,22 @@ RSpec.describe FactGraph do
         {
           math_facts: {
             pi: 3.14,
-            squared_scale: {
+            squared_scale: Dry::Monads::Failure({
               fact_bad_inputs: {
                 [:scale] => Set.new(["must be Numeric"])
               },
               fact_dependency_unmet: {}
-            }
+            })
           },
           circle_facts: {
-            areas: {
+            areas: Dry::Monads::Failure({
               fact_bad_inputs: {
                 [:circles] => Set.new(["must be an array"])
               },
               fact_dependency_unmet: {
                 math_facts: [:squared_scale]
               }
-            }
+            })
           },
           simple_facts: {
             two: 2
@@ -111,12 +111,12 @@ RSpec.describe FactGraph do
             squared_scale: 25
           },
           circle_facts: {
-            areas: {
+            areas: Dry::Monads::Failure({
               fact_bad_inputs: {
                 [:circles] => Set.new(["must be an array"])
               },
               fact_dependency_unmet: {}
-            }
+            })
           },
           simple_facts: {
             two: 2
@@ -138,13 +138,13 @@ RSpec.describe FactGraph do
             squared_scale: 25
           },
           circle_facts: {
-            areas: {
+            areas: Dry::Monads::Failure({
               fact_bad_inputs: {
                 [:circles, 0, :radius] => Set.new(["must be an integer"]),
                 [:circles, 1, :radius] => Set.new(["is missing"])
               },
               fact_dependency_unmet: {}
-            }
+            })
           },
           simple_facts: {
             two: 2
@@ -174,7 +174,7 @@ RSpec.describe FactGraph do
         }
       end
 
-      it "returns some results & some errors" do
+      it "returns only successful results" do
         expect(results).to eq(expected_result)
       end
     end
