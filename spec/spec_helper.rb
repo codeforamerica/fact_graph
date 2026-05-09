@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "fact_graph"
+require "debug/prelude"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

@@ -14,3 +14,5 @@ gem "standard", ">= 1.35.1"
 
 # Necessary for debugging in RubyMine
 gem "mutex_m"
+
+gem "dry-monads", "~> 1.10"

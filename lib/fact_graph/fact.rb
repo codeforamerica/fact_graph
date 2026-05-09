@@ -1,6 +1,9 @@
 require "dry/schema"
+require "dry/monads"
+Dry::Schema.load_extensions(:monads)
 
 class FactGraph::Fact
+  include Dry::Monads[:result, :validated, :list, :do]
   attr_accessor :name, :module_name, :resolver, :dependencies, :input_definitions, :graph, :per_entity, :entity_id, :allow_unmet_dependencies
 
   def initialize(name:, module_name:, graph:, def_proc:, per_entity: nil, entity_id: nil, allow_unmet_dependencies: false)
@@ -73,15 +76,21 @@ class FactGraph::Fact
     end
   end
 
-  def validate_input(input, errors)
-    input_definitions.each do |input_name, input_definition|
+  def validate_input(input)
+    input_validation_resultss = input_definitions.map do |input_name, input_definition|
       input_validator = input_definition[:validator]
-      result = input_validator.call("#{input_name}": input[input_name])
-      if result.failure?
-        result.errors.each do |error|
-          errors[:fact_bad_inputs][error.path] ||= Set.new
-          errors[:fact_bad_inputs][error.path].add(error.text)
-        end
+      input_validator.call("#{input_name}": input[input_name]).to_monad
+    end
+  end
+
+  def evaluate_dependencies(input, results)
+    dependency_facts.transform_values do |dependency|
+      if dependency.is_a? FactGraph::Fact
+        dependency.call(input, results)
+      elsif dependency.is_a? Hash
+        dependency
+          .transform_values { |fact| fact.call(input, results) }
+          .filter { |_entity_id, result| result.success? }
       end
     end
   end
@@ -100,43 +109,43 @@ class FactGraph::Fact
       return resolver
     end
 
-    evaluated_dependencies = dependency_facts.transform_values do |dependency|
-      if dependency.is_a? FactGraph::Fact
-        dependency.call(input, results)
-      elsif dependency.is_a? Hash
-        dependency
-          .transform_values { |fact| fact.call(input, results) }
-          .filter { |_entity_id, result| !(result in {fact_dependency_unmet:, fact_bad_inputs:}) }
-      end
-    end
-
-    data = FactGraph::DataContainer.new(
-      {
-        # TODO: Should dependencies be in module hashes to allow fact name collisions across modules?
-        dependencies: evaluated_dependencies,
-        input: filter_input(input)
-      }
-    )
+    filtered_input = filter_input(input)
+    input_validation_results = validate_input(filtered_input)
+    dependency_evaluation_result = evaluate_dependencies(input, results)
 
     errors = {
       fact_bad_inputs: {},
       fact_dependency_unmet: Hash.new { |h, key| h[key] = [] }
     }
 
-    validate_input(data.data[:input], errors)
+    dependency_evaluation_result.each do |dependency_name, dependency_result|
+      if dependency_result.failure?
+        bad_module = dependency_facts[dependency_name].module_name
+        errors[:fact_dependency_unmet][bad_module] << dependency_name
+      end
+    end
 
-    data.data[:dependencies].each do |key, dependency|
-      if dependency in {fact_dependency_unmet: Hash} | {fact_bad_inputs: Array}
-        bad_module = dependency_facts[key].module_name
-        errors[:fact_dependency_unmet][bad_module] << key
+    input_validation_failures = input_validation_results.select(&:failure?)
+    input_validation_failures.each do |input_result|
+      input_result.failure.errors.each do |error|
+        errors[:fact_bad_inputs][error.path] ||= Set.new
+        errors[:fact_bad_inputs][error.path].add(error.text)
       end
     end
 
     if errors[:fact_dependency_unmet].any? || errors[:fact_bad_inputs].any?
-      data_errors = errors
+      data_errors = Dry::Monads::Failure(errors)
     end
 
     resolved_errors = nil
+
+    data = FactGraph::DataContainer.new(
+      FactGraph::ResultHash.deep_cast({
+        # TODO: Should dependencies be in module hashes to allow fact name collisions across modules?
+        dependencies: dependency_evaluation_result,
+        input: filtered_input
+      })
+    )
 
     if allow_unmet_dependencies
       data.data_errors = data_errors
@@ -144,11 +153,19 @@ class FactGraph::Fact
       resolved_errors = data_errors
     end
 
+    puts "===="
+    puts "FACT NAME: #{name}"
+    puts "RESULTS SO FAR: #{results}"
+    puts "DATA: #{data.data}"
+
+    fact_value = data.instance_exec(&resolver)
+    fact_result = fact_value.is_a?(Dry::Monads::Result) ? fact_value : Dry::Monads::Success(fact_value)
+
     if per_entity
       results[module_name][name] ||= {}
-      results[module_name][name][entity_id] = resolved_errors || data.instance_exec(&resolver)
+      results[module_name][name][entity_id] = resolved_errors || fact_result
     else
-      results[module_name][name] = resolved_errors || data.instance_exec(&resolver)
+      results[module_name][name] = resolved_errors || fact_result
     end
   end
 end

@@ -36,13 +36,19 @@ class ContactInfo < FactGraph::Graph
 
     proc do
       must_match do
+        puts "DATA IN THE FACT: #{data}"
+        puts ""
         case data
         # User doesn't want snail mail so we can bomb out early
         in input: {snail_mail_opt_in: false}
           false
-          # You might imagine that we are checking that the address actually
-          # exists and can be mailed to
-          # in dependencies: {formatted_address: String}
+        # This is a purposefully under-specified fact to test DataContainer's exception handling.
+        # A more realistic version of this fact would contain the following lines:
+
+        # in dependencies: {formatted_address: Dry::Monads::Failure}
+        #   false
+        # in input: {snail_mail_opt_in: true}, dependencies: {formatted_address: String}
+        #   true
         end
       end
     end
