@@ -77,9 +77,10 @@ class FactGraph::Fact
   end
 
   def validate_input(input)
-    input_validation_resultss = input_definitions.map do |input_name, input_definition|
-      input_validator = input_definition[:validator]
-      input_validator.call("#{input_name}": input[input_name]).to_monad
+    input_definitions.map do |input_name, input_definition|
+      one = input_validator = input_definition[:validator]
+      two = input_validator.call("#{input_name}": input[input_name]).to_monad
+      two
     end
   end
 
@@ -105,7 +106,7 @@ class FactGraph::Fact
     results[module_name] ||= {}
 
     if !resolver.respond_to?(:call)
-      results[module_name][name] = resolver
+      results[module_name][name] = Dry::Monads::Success(resolver)
       return resolver
     end
 
@@ -119,9 +120,18 @@ class FactGraph::Fact
     }
 
     dependency_evaluation_result.each do |dependency_name, dependency_result|
-      if dependency_result.failure?
-        bad_module = dependency_facts[dependency_name].module_name
-        errors[:fact_dependency_unmet][bad_module] << dependency_name
+      if dependency_result.is_a? Dry::Monads::Result
+        if dependency_result.failure?
+          bad_module = dependency_facts[dependency_name].module_name
+          errors[:fact_dependency_unmet][bad_module] << dependency_name
+        end
+      elsif dependency_result.is_a? Hash
+        dependency_result.each do |entity_id, per_entity_dependency_result|
+          if per_entity_dependency_result .failure?
+            bad_module = dependency_facts[dependency_name].module_name
+            errors[:fact_dependency_unmet][bad_module][entity_id] << dependency_name
+          end
+        end
       end
     end
 
@@ -140,7 +150,7 @@ class FactGraph::Fact
     resolved_errors = nil
 
     data = FactGraph::DataContainer.new(
-      FactGraph::ResultHash.deep_cast({
+      deep_unwrap_successes({
         # TODO: Should dependencies be in module hashes to allow fact name collisions across modules?
         dependencies: dependency_evaluation_result,
         input: filtered_input
@@ -158,14 +168,25 @@ class FactGraph::Fact
     puts "RESULTS SO FAR: #{results}"
     puts "DATA: #{data.data}"
 
-    fact_value = data.instance_exec(&resolver)
+    fact_value = resolved_errors || data.instance_exec(&resolver)
     fact_result = fact_value.is_a?(Dry::Monads::Result) ? fact_value : Dry::Monads::Success(fact_value)
 
     if per_entity
       results[module_name][name] ||= {}
-      results[module_name][name][entity_id] = resolved_errors || fact_result
+      results[module_name][name][entity_id] = fact_result
     else
-      results[module_name][name] = resolved_errors || fact_result
+      results[module_name][name] = fact_result
+    end
+  end
+
+  private
+
+  def deep_unwrap_successes(value)
+    case value
+    in Hash then value.transform_values { |v| deep_unwrap_successes(v) }
+    in Dry::Monads::Success(unwrapped) then unwrapped
+    in Dry::Monads::Failure then value
+    else value
     end
   end
 end
