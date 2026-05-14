@@ -12,12 +12,12 @@ class ApplicantFacts < FactGraph::Graph
     dependency :age
 
     proc do
-      data in dependencies: { income:, age: }
+      data in dependencies: {income:, age:}
       if (income.is_a?(Integer) && income < 100) ||
-        (age.is_a?(Integer) && age > 100)
+          (age.is_a?(Integer) && age > 100)
         true
-      elsif (income in { fact_bad_inputs:, fact_dependency_unmet: }) ||
-        (age in { fact_bad_inputs:, fact_dependency_unmet: })
+      elsif (income in {fact_bad_inputs:, fact_dependency_unmet:}) ||
+          (age in {fact_bad_inputs:, fact_dependency_unmet:})
         data_errors
       else
         false
@@ -29,7 +29,7 @@ class ApplicantFacts < FactGraph::Graph
     dependency :eligible
 
     proc do
-      data in dependencies: { eligible: }
+      data in dependencies: {eligible:}
       eligible.values.count { |v| v == true }
     end
   end
@@ -38,7 +38,7 @@ class ApplicantFacts < FactGraph::Graph
     dependency :income
 
     proc do
-      data in dependencies: { income: }
+      data in dependencies: {income:}
       income.sum { |k, v| v }
     end
   end

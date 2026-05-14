@@ -12,7 +12,7 @@ module Dependent
         dependency :year_of_birth
 
         proc do
-          data in { dependencies: { tax_year:, year_of_birth: } }
+          data in {dependencies: {tax_year:, year_of_birth:}}
           tax_year - year_of_birth
         end
       end
