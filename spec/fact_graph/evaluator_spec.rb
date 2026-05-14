@@ -144,6 +144,42 @@ RSpec.describe FactGraph::Evaluator do
     end
   end
 
+  describe ".evaluate" do
+    context "deep freezes results" do
+      let(:input) { {scale: 5, circles: [{radius: 1}, {radius: 2}]} }
+      let(:results) { described_class.evaluate(input) }
+
+      it "freezes the top-level hash and all nested module hashes" do
+        expect(results).to be_frozen
+        results.each_value do |module_results|
+          expect(module_results).to be_frozen
+        end
+      end
+
+      it "freezes array fact values and their elements" do
+        areas = results[:circle_facts][:areas]
+        expect(areas).to be_frozen
+        areas.each { |v| expect(v).to be_frozen }
+      end
+
+      it "freezes error result hashes deeply" do
+        error_results = described_class.evaluate({})
+        error = error_results[:math_facts][:squared_scale]
+        expect(error).to be_frozen
+        expect(error[:fact_bad_inputs]).to be_frozen
+        expect(error[:fact_dependency_unmet]).to be_frozen
+      end
+
+      it "freezes sets and their elements within error results" do
+        error_results = described_class.evaluate({})
+        error_messages = error_results[:math_facts][:squared_scale][:fact_bad_inputs][[:scale]]
+        expect(error_messages).to be_a(Set)
+        expect(error_messages).to be_frozen
+        error_messages.each { |msg| expect(msg).to be_frozen }
+      end
+    end
+  end
+
   describe ".input_errors" do
     let!(:evaluation_results) { described_class.evaluate(input) }
     let(:results) { FactGraph::Evaluator.input_errors(evaluation_results) }

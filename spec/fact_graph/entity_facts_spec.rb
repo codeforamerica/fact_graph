@@ -49,7 +49,6 @@ RSpec.describe "Entity Facts" do
       expect(results[:applicant_facts]).to eq(expected_output)
     end
 
-
     describe "FactGraph.entity_map" do
       it "returns an entity map that includes a correct map of entity names and ids" do
         expect(FactGraph::Graph.entity_map(input)).to eq({applicants: [0, 1]})
@@ -62,7 +61,7 @@ RSpec.describe "Entity Facts" do
       {
         applicants: [
           {
-            income: 99,
+            income: 99
           },
           {
             age: 101

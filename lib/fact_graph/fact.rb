@@ -35,12 +35,12 @@ class FactGraph::Fact
       if dependency_fact.is_a? FactGraph::Fact
         result_hash[dependency_fact_name] = dependency_fact
       elsif dependency_fact.is_a? Hash
-        if per_entity
+        result_hash[dependency_fact_name] = if per_entity
           # Take only the fact corresponding to our entity ID as the dependency
-          result_hash[dependency_fact_name] = dependency_fact[entity_id]
+          dependency_fact[entity_id]
         else
           # Take the whole hash of {entity IDs => facts} as the dependency
-          result_hash[dependency_fact_name] = dependency_fact
+          dependency_fact
         end
       end
     end
@@ -57,7 +57,7 @@ class FactGraph::Fact
       raise ArgumentError.new("input must be called with a name (String) or key path (Array)")
     end
     schema_blk = Dry::Schema.Params(&validation_blk)
-    input_definitions[name] = kwargs.merge({ validator: schema_blk })
+    input_definitions[name] = kwargs.merge({validator: schema_blk})
 
     proc do
       data.dig(:input, *name_or_keypath)
@@ -103,8 +103,8 @@ class FactGraph::Fact
   def call(input, results)
     if per_entity
       return results.dig(module_name, name, entity_id) if results.dig(module_name, name, entity_id)
-    else
-      return results.dig(module_name, name) if results.dig(module_name, name)
+    elsif results.dig(module_name, name)
+      return results.dig(module_name, name)
     end
 
     results[module_name] ||= {}
@@ -120,7 +120,7 @@ class FactGraph::Fact
       elsif dependency.is_a? Hash
         dependency
           .transform_values { |fact| fact.call(input, results) }
-          .filter { |_entity_id, result| !(result in { fact_dependency_unmet:, fact_bad_inputs: }) }
+          .filter { |_entity_id, result| !(result in {fact_dependency_unmet:, fact_bad_inputs:}) }
       end
     end
 
@@ -140,7 +140,7 @@ class FactGraph::Fact
     validate_input(data.data[:input], errors)
 
     data.data[:dependencies].each do |key, dependency|
-      if dependency in { fact_dependency_unmet: Hash } | { fact_bad_inputs: Array }
+      if dependency in {fact_dependency_unmet: Hash} | {fact_bad_inputs: Array}
         bad_module = dependency_facts[key].module_name
         errors[:fact_dependency_unmet][bad_module] << key
       end

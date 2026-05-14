@@ -46,11 +46,11 @@ module FactGraph
 
       def filter_graph(module_filter)
         if module_filter
-          self.graph_registry.select do |fact_kwargs|
+          graph_registry.select do |fact_kwargs|
             module_filter.include? fact_kwargs[:module_name]
           end
         else
-          self.graph_registry
+          graph_registry
         end
       end
 
