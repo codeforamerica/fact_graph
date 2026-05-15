@@ -1,14 +1,10 @@
 class ApplicantFacts < FactGraph::Graph
   fact :income, per_entity: :applicants do
-    input :income, per_entity: true do
-      required(:income).value(:integer)
-    end
+    input :income, per_entity: true, value: :integer
   end
 
   fact :age, per_entity: :applicants do
-    input :age, per_entity: true do
-      required(:age).value(:integer)
-    end
+    input :age, per_entity: true, value: :integer
   end
 
   fact :eligible, per_entity: :applicants, allow_unmet_dependencies: true do

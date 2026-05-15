@@ -12,6 +12,7 @@ RSpec.describe FactGraph::Fact do
     context "when called with structured input that contains more fields than are required by a fact" do
       let(:input) do
         {
+          unused_input: "foo",
           street_address: {
             street_number: 1,
             street_name: "Sesame St",
@@ -120,6 +121,19 @@ RSpec.describe FactGraph::Fact do
       results = {}
       graph[:contact_info][:street_number].call(input, results)
       expect(results[:contact_info][:street_number]).to eq 1
+    end
+
+    context "when a short-form predicate is violated" do
+      before { input[:street_address][:street_number] = -1 }
+
+      it "returns an input-validation error" do
+        results = {}
+        graph[:contact_info][:street_number].call(input, results)
+        expect(results[:contact_info][:street_number]).to match(
+          fact_bad_inputs: {[:street_address, :street_number] => Set.new(["must be greater than or equal to 0"])},
+          fact_dependency_unmet: {}
+        )
+      end
     end
   end
 end

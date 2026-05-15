@@ -46,7 +46,9 @@ class FactGraph::Fact
     end
   end
 
-  def input(name_or_keypath, **kwargs, &validation_blk)
+  FRAMEWORK_INPUT_KWARGS = %i[per_entity].freeze
+
+  def input(name_or_keypath, **kwargs, &validation_block)
     name = case name_or_keypath
     in String | Symbol
       name_or_keypath
@@ -54,13 +56,36 @@ class FactGraph::Fact
       # if there are multiple inputs taken from the same top-level key, they must be required in the same .hash schema
       name_or_keypath.first
     else
-      raise ArgumentError.new("input must be called with a name (String) or key path (Array)")
+      raise ArgumentError.new("input must be called with a name (String/Symbol) or key path (Array)")
     end
-    schema_blk = Dry::Schema.Params(&validation_blk)
-    input_definitions[name] = kwargs.merge({validator: schema_blk})
+
+    framework_kwargs = kwargs.slice(*FRAMEWORK_INPUT_KWARGS)
+    schema = if validation_block
+      Dry::Schema.Params(&validation_block)
+    else
+      # `value:` takes a single predicate or an array of predicates, splatted into Dry::Schema's `.value(...)`
+      # as positional args alongside any predicate kwargs (e.g. gteq?: 0, format?: /.../).
+      value_predicates = Array(kwargs[:value])
+      predicate_kwargs = kwargs.except(*FRAMEWORK_INPUT_KWARGS, :value)
+      Dry::Schema.Params(&self.class.nested_value_schema(Array(name_or_keypath), value_predicates, predicate_kwargs))
+    end
+
+    input_definitions[name] = framework_kwargs.merge({validator: schema})
 
     proc do
       data.dig(:input, *name_or_keypath)
+    end
+  end
+
+  # Builds a proc that, when used as a Dry::Schema.Params block, declares
+  # `required(k1).hash { required(k2).hash { ... required(kN).value(*predicates, **predicate_kwargs) } }`.
+  def self.nested_value_schema(keypath, value_predicates, predicate_kwargs)
+    key = keypath.first
+    if keypath.size == 1
+      proc { required(key).value(*value_predicates, **predicate_kwargs) }
+    else
+      inner = nested_value_schema(keypath.drop(1), value_predicates, predicate_kwargs)
+      proc { required(key).hash(&inner) }
     end
   end
 

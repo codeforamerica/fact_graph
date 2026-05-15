@@ -6,9 +6,7 @@ class MathFacts < FactGraph::Graph
   constant(:pi) { 3.14 }
 
   fact :squared_scale do
-    input :scale do
-      required(:scale).value(type?: Numeric, gteq?: 0)
-    end
+    input :scale, type?: Numeric, gteq?: 0
 
     proc do
       data in input: {scale:}
