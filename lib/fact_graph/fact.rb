@@ -90,7 +90,11 @@ class FactGraph::Fact
   def self.nested_value_schema(keypath, value_predicates, predicate_kwargs)
     key = keypath.first
     if keypath.size == 1
-      proc { required(key).value(*value_predicates, **predicate_kwargs) }
+      if value_predicates.empty? && predicate_kwargs.empty?
+        proc { required(key) }
+      else
+        proc { required(key).value(*value_predicates, **predicate_kwargs) }
+      end
     else
       inner = nested_value_schema(keypath.drop(1), value_predicates, predicate_kwargs)
       proc { required(key).hash(&inner) }

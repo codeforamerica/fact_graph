@@ -174,4 +174,36 @@ RSpec.describe FactGraph::Fact do
       }.not_to raise_error
     end
   end
+
+  describe "short-form input with no value predicates" do
+    before do
+      FactGraph::Graph.graph_registry = []
+      Class.new(FactGraph::Graph) do
+        in_module :unvalidated_facts do
+          fact :anything do
+            input [:wrapper, :anything]
+          end
+        end
+      end
+    end
+
+    it "requires the key but accepts any value" do
+      input = {wrapper: {anything: "some string"}}
+      graph = FactGraph::Graph.prepare_fact_objects(input)
+      results = {}
+      graph[:unvalidated_facts][:anything].call(input, results)
+      expect(results[:unvalidated_facts][:anything]).to eq "some string"
+    end
+
+    it "flags a validation error when the required key is missing" do
+      input = {wrapper: {}}
+      graph = FactGraph::Graph.prepare_fact_objects(input)
+      results = {}
+      graph[:unvalidated_facts][:anything].call(input, results)
+      expect(results[:unvalidated_facts][:anything]).to match(
+        fact_bad_inputs: hash_including([:wrapper, :anything]),
+        fact_dependency_unmet: {}
+      )
+    end
+  end
 end
