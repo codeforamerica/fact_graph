@@ -14,6 +14,17 @@ class FactGraph::Fact
     @allow_unmet_dependencies = allow_unmet_dependencies
 
     @resolver = instance_eval(&def_proc)
+
+    # In the common case of an "input fact" - with only a single input definition and no dependencies or proc/value -
+    #   create a proc that passes through the single input.
+    if @resolver.nil? && @input_definitions.size == 1 && @dependencies.empty?
+      keypath = @input_definitions.values.first[:keypath]
+      @resolver = proc { data.dig(:input, *keypath) }
+    elsif (@input_definitions.any? || @dependencies.any?) && !@resolver.respond_to?(:call)
+      raise "Fact :#{@module_name}/:#{@name} has inputs or dependencies but no callable resolver. " \
+            "Add a `proc do ... end` body, or use single-input pass-through " \
+            "(exactly one `input`, no `dependency`, no `proc`)."
+    end
   end
 
   def dependency(fact, from: nil)
@@ -22,6 +33,7 @@ class FactGraph::Fact
     end
 
     dependencies[fact] = from
+    nil
   end
 
   def dependency_facts
@@ -70,11 +82,11 @@ class FactGraph::Fact
       Dry::Schema.Params(&self.class.nested_value_schema(Array(name_or_keypath), value_predicates, predicate_kwargs))
     end
 
-    input_definitions[name] = framework_kwargs.merge({validator: schema})
-
-    proc do
-      data.dig(:input, *name_or_keypath)
-    end
+    input_definitions[name] = framework_kwargs.merge({
+      validator: schema,
+      keypath: Array(name_or_keypath)
+    })
+    nil
   end
 
   # Builds a proc that, when used as a Dry::Schema.Params block, declares

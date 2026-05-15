@@ -136,4 +136,42 @@ RSpec.describe FactGraph::Fact do
       end
     end
   end
+
+  describe "missing resolver detection" do
+    before { FactGraph::Graph.graph_registry = [] }
+
+    it "raises when a fact has a dependency but no resolver" do
+      Class.new(FactGraph::Graph) do
+        fact :no_resolver do
+          dependency :something_else
+        end
+      end
+      expect {
+        FactGraph::Graph.prepare_fact_objects({})
+      }.to raise_error(/has inputs or dependencies but no callable resolver/)
+    end
+
+    it "raises when a fact has multiple inputs but no resolver" do
+      Class.new(FactGraph::Graph) do
+        fact :two_inputs do
+          input :a, value: :integer
+          input :b, value: :integer
+        end
+      end
+      expect {
+        FactGraph::Graph.prepare_fact_objects({})
+      }.to raise_error(/has inputs or dependencies but no callable resolver/)
+    end
+
+    it "does not raise for a single-input pass-through fact" do
+      Class.new(FactGraph::Graph) do
+        fact :one_input do
+          input :a, value: :integer
+        end
+      end
+      expect {
+        FactGraph::Graph.prepare_fact_objects({})
+      }.not_to raise_error
+    end
+  end
 end
