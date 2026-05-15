@@ -54,7 +54,7 @@ class FactGraph::Fact
     end
   end
 
-  FRAMEWORK_INPUT_KWARGS = %i[per_entity].freeze
+  FRAMEWORK_INPUT_KWARGS = [:per_entity].freeze
 
   def input(name_or_keypath, **kwargs, &validation_block)
     name = case name_or_keypath
