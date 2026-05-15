@@ -28,11 +28,7 @@ class FactGraph::Fact
   end
 
   def dependency(fact, from: nil)
-    if from.nil?
-      from = module_name
-    end
-
-    dependencies[fact] = from
+    dependencies[fact] = from || module_name
     nil
   end
 
