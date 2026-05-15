@@ -14,14 +14,22 @@ class FactGraph::Fact
     @allow_unmet_dependencies = allow_unmet_dependencies
 
     @resolver = instance_eval(&def_proc)
+
+    # In the common case of an "input fact" - with only a single input definition and no dependencies or proc/value -
+    #   create a proc that passes through the single input.
+    if @resolver.nil? && @input_definitions.size == 1 && @dependencies.empty?
+      keypath = @input_definitions.values.first[:keypath]
+      @resolver = proc { data.dig(:input, *keypath) }
+    elsif (@input_definitions.any? || @dependencies.any?) && !@resolver.respond_to?(:call)
+      raise "Fact :#{@module_name}/:#{@name} has inputs or dependencies but no callable resolver. " \
+            "Add a `proc do ... end` body, or use single-input pass-through " \
+            "(exactly one `input`, no `dependency`, no `proc`)."
+    end
   end
 
   def dependency(fact, from: nil)
-    if from.nil?
-      from = module_name
-    end
-
-    dependencies[fact] = from
+    dependencies[fact] = from || module_name
+    nil
   end
 
   def dependency_facts
@@ -46,8 +54,51 @@ class FactGraph::Fact
     end
   end
 
-  def input(name, **kwargs, &schema_blk)
-    input_definitions[name] = kwargs.merge({validator: schema_blk.call})
+  FRAMEWORK_INPUT_KWARGS = [:per_entity].freeze
+
+  def input(name_or_keypath, **kwargs, &validation_block)
+    name = case name_or_keypath
+    in String | Symbol
+      name_or_keypath
+    in Array
+      # if there are multiple inputs taken from the same top-level key, they must be required in the same .hash schema
+      name_or_keypath.first
+    else
+      raise ArgumentError.new("input must be called with a name (String/Symbol) or key path (Array)")
+    end
+
+    framework_kwargs = kwargs.slice(*FRAMEWORK_INPUT_KWARGS)
+    schema = if validation_block
+      Dry::Schema.Params(&validation_block)
+    else
+      # `value:` takes a single predicate or an array of predicates, splatted into Dry::Schema's `.value(...)`
+      # as positional args alongside any predicate kwargs (e.g. gteq?: 0, format?: /.../).
+      value_predicates = Array(kwargs[:value])
+      predicate_kwargs = kwargs.except(*FRAMEWORK_INPUT_KWARGS, :value)
+      Dry::Schema.Params(&self.class.nested_value_schema(Array(name_or_keypath), value_predicates, predicate_kwargs))
+    end
+
+    input_definitions[name] = framework_kwargs.merge({
+      validator: schema,
+      keypath: Array(name_or_keypath)
+    })
+    nil
+  end
+
+  # Builds a proc that, when used as a Dry::Schema.Params block, declares
+  # `required(k1).hash { required(k2).hash { ... required(kN).value(*predicates, **predicate_kwargs) } }`.
+  def self.nested_value_schema(keypath, value_predicates, predicate_kwargs)
+    key = keypath.first
+    if keypath.size == 1
+      if value_predicates.empty? && predicate_kwargs.empty?
+        proc { required(key) }
+      else
+        proc { required(key).value(*value_predicates, **predicate_kwargs) }
+      end
+    else
+      inner = nested_value_schema(keypath.drop(1), value_predicates, predicate_kwargs)
+      proc { required(key).hash(&inner) }
+    end
   end
 
   def filter_input(input)

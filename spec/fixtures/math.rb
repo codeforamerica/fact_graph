@@ -6,11 +6,7 @@ class MathFacts < FactGraph::Graph
   constant(:pi) { 3.14 }
 
   fact :squared_scale do
-    input :scale do
-      Dry::Schema.Params do
-        required(:scale).value(type?: Numeric, gteq?: 0)
-      end
-    end
+    input :scale, type?: Numeric, gteq?: 0
 
     proc do
       data in input: {scale:}
@@ -22,11 +18,9 @@ end
 class CircleFacts < FactGraph::Graph
   fact :areas do
     input :circles do
-      Dry::Schema.Params do
-        required(:circles).array(:hash) do
-          required(:radius).value(:integer)
-          optional(:color).value(:string)
-        end
+      required(:circles).array(:hash) do
+        required(:radius).value(:integer)
+        optional(:color).value(:string)
       end
     end
 
