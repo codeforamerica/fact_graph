@@ -12,6 +12,7 @@ RSpec.describe FactGraph::Fact do
     context "when called with structured input that contains more fields than are required by a fact" do
       let(:input) do
         {
+          unused_input: "foo",
           street_address: {
             street_number: 1,
             street_name: "Sesame St",
@@ -97,6 +98,112 @@ RSpec.describe FactGraph::Fact do
           expect(results[:contact_info][:can_receive_mail]).to eq false
         end
       end
+    end
+  end
+
+  describe "nested input facts" do
+    let(:graph) { FactGraph::Graph.prepare_fact_objects(input) }
+    let(:input) do
+      {
+        snail_mail_opt_in: false,
+        street_address: {
+          street_number: 1,
+          street_name: "Sesame St",
+          city: "New York",
+          state: "New York",
+          zip_code: "10123",
+          county: "New York"
+        }
+      }
+    end
+
+    it "can use the input shortcut to describe facts with nested input" do
+      results = {}
+      graph[:contact_info][:street_number].call(input, results)
+      expect(results[:contact_info][:street_number]).to eq 1
+    end
+
+    context "when a short-form predicate is violated" do
+      before { input[:street_address][:street_number] = -1 }
+
+      it "returns an input-validation error" do
+        results = {}
+        graph[:contact_info][:street_number].call(input, results)
+        expect(results[:contact_info][:street_number]).to match(
+          fact_bad_inputs: {[:street_address, :street_number] => Set.new(["must be greater than or equal to 0"])},
+          fact_dependency_unmet: {}
+        )
+      end
+    end
+  end
+
+  describe "missing resolver detection" do
+    before { FactGraph::Graph.graph_registry = [] }
+
+    it "raises when a fact has a dependency but no resolver" do
+      Class.new(FactGraph::Graph) do
+        fact :no_resolver do
+          dependency :something_else
+        end
+      end
+      expect {
+        FactGraph::Graph.prepare_fact_objects({})
+      }.to raise_error(/has inputs or dependencies but no callable resolver/)
+    end
+
+    it "raises when a fact has multiple inputs but no resolver" do
+      Class.new(FactGraph::Graph) do
+        fact :two_inputs do
+          input :a, value: :integer
+          input :b, value: :integer
+        end
+      end
+      expect {
+        FactGraph::Graph.prepare_fact_objects({})
+      }.to raise_error(/has inputs or dependencies but no callable resolver/)
+    end
+
+    it "does not raise for a single-input pass-through fact" do
+      Class.new(FactGraph::Graph) do
+        fact :one_input do
+          input :a, value: :integer
+        end
+      end
+      expect {
+        FactGraph::Graph.prepare_fact_objects({})
+      }.not_to raise_error
+    end
+  end
+
+  describe "short-form input with no value predicates" do
+    before do
+      FactGraph::Graph.graph_registry = []
+      Class.new(FactGraph::Graph) do
+        in_module :unvalidated_facts do
+          fact :anything do
+            input [:wrapper, :anything]
+          end
+        end
+      end
+    end
+
+    it "requires the key but accepts any value" do
+      input = {wrapper: {anything: "some string"}}
+      graph = FactGraph::Graph.prepare_fact_objects(input)
+      results = {}
+      graph[:unvalidated_facts][:anything].call(input, results)
+      expect(results[:unvalidated_facts][:anything]).to eq "some string"
+    end
+
+    it "flags a validation error when the required key is missing" do
+      input = {wrapper: {}}
+      graph = FactGraph::Graph.prepare_fact_objects(input)
+      results = {}
+      graph[:unvalidated_facts][:anything].call(input, results)
+      expect(results[:unvalidated_facts][:anything]).to match(
+        fact_bad_inputs: hash_including([:wrapper, :anything]),
+        fact_dependency_unmet: {}
+      )
     end
   end
 end

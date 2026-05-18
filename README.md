@@ -18,7 +18,7 @@ Then run `bundle install`.
 
 ### dry-schema
 
-[dry-schema](https://dry-rb.org/gems/dry-schema) handles input validation. Each fact declares its expected inputs as `Dry::Schema.Params` blocks; the evaluator runs those schemas against the provided input and captures any errors in the result hash rather than raising. This keeps invalid input from silently propagating through the graph — downstream facts that depend on a fact with bad inputs are skipped and their results carry a `fact_dependency_unmet` marker.
+[dry-schema](https://dry-rb.org/gems/dry-schema) handles input validation. Each fact declares its expected inputs using dry-schema's DSL (`required(...).value(...)` etc.); the evaluator runs those schemas against the provided input and captures any errors in the result hash rather than raising. This keeps invalid input from silently propagating through the graph — downstream facts that depend on a fact with bad inputs are skipped and their results carry a `fact_dependency_unmet` marker.
 
 ### ActiveSupport
 
@@ -50,15 +50,13 @@ end
 
 ### Facts with input
 
-Use `dry-schema` blocks to declare and validate input:
+Use dry-schema's DSL inside an `input` block to declare and validate input. The `Dry::Schema.Params` wrapper is implicit:
 
 ```ruby
 class MathFacts < FactGraph::Graph
   fact :squared_scale do
     input :scale do
-      Dry::Schema.Params do
-        required(:scale).value(type?: Numeric, gteq?: 0)
-      end
+      required(:scale).value(type?: Numeric, gteq?: 0)
     end
 
     proc do
@@ -71,6 +69,34 @@ end
 
 The fact's proc receives a `data` hash with `:input` and `:dependencies` keys. Use Ruby's pattern-matching (`in`) to destructure it.
 
+### Short-form input declarations
+
+For the common case of "one required key, type and/or simple predicates," skip the schema block. Pass the type via `value:` (single predicate or array of predicates, splatted into dry-schema's `.value(...)`) and any other predicates as kwargs:
+
+```ruby
+input :age,    value: :integer, gteq?: 0
+input :scale,  type?: Numeric, gteq?: 0   # kwarg-only form is fine
+input :status, value: :filled?
+input :count,  value: [:int?, :odd?]
+```
+
+Pass a key path to validate a nested key. The short form expands it into nested `required(...).hash do ... end`:
+
+```ruby
+input [:street_address, :street_number], value: :integer, gteq?: 0
+input [:primary, :suffix]                                 # key required, value unconstrained
+```
+
+When a fact body has exactly one `input`, no `dependency`, and no explicit `proc`, the resolver `proc { data.dig(:input, *keypath) }` is synthesized automatically — so a "just expose this input as a fact" fact collapses to one declaration:
+
+```ruby
+fact :street_number do
+  input [:street_address, :street_number], value: :integer
+end
+```
+
+If a fact has inputs or dependencies but no callable resolver (you forgot the `proc`, or accidentally left a `dependency :foo` as the last expression), `Fact#initialize` raises with a descriptive message rather than silently using a non-callable value as the resolver. Constants (`constant(:x) { value }`) are unaffected.
+
 ### Facts with dependencies
 
 Declare dependencies on other facts with `dependency`. Use `from:` to reference a fact in another module:
@@ -79,10 +105,8 @@ Declare dependencies on other facts with `dependency`. Use `from:` to reference 
 class CircleFacts < FactGraph::Graph
   fact :areas do
     input :circles do
-      Dry::Schema.Params do
-        required(:circles).array(:hash) do
-          required(:radius).value(:integer)
-        end
+      required(:circles).array(:hash) do
+        required(:radius).value(:integer)
       end
     end
 
@@ -109,15 +133,7 @@ Use `per_entity:` to evaluate a fact once per entity in a collection. Inputs for
 ```ruby
 class ApplicantFacts < FactGraph::Graph
   fact :income, per_entity: :applicants do
-    input :income, per_entity: true do
-      Dry::Schema.Params do
-        required(:income).value(:integer)
-      end
-    end
-
-    proc do
-      data[:input][:income]
-    end
+    input :income, per_entity: true, value: :integer
   end
 end
 ```
