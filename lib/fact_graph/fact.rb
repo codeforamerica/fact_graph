@@ -114,34 +114,33 @@ class FactGraph::Fact
     input_validation_results = validate_input(filtered_input)
     dependency_evaluation_result = evaluate_dependencies(input, results)
 
-    errors = {
-      fact_bad_inputs: {},
-      fact_dependency_unmet: Hash.new { |h, key| h[key] = [] }
-    }
-
+    dependency_errors = Hash.new { |h, key| h[key] = [] }
     dependency_evaluation_result.each do |dependency_name, dependency_result|
       if dependency_result.is_a? Dry::Monads::Result
         if dependency_result.failure?
           bad_module = dependency_facts[dependency_name].module_name
-          errors[:fact_dependency_unmet][bad_module] << dependency_name
+          dependency_errors[bad_module] << dependency_name
         end
       elsif dependency_result.is_a? Hash
-        dependency_result.each do |entity_id, per_entity_dependency_result|
-          if per_entity_dependency_result .failure?
-            bad_module = dependency_facts[dependency_name].module_name
-            errors[:fact_dependency_unmet][bad_module][entity_id] << dependency_name
-          end
-        end
+        # We don't do anything special here because in the case of dependencies that are Hashes (which means we are
+        # aggregating per-entity facts), we filter out failures in #evaluate_dependencies. That behavior may change
+        # in the future, in which case this branch would need to change as well to record those failures.
       end
     end
 
+    input_errors = {}
     input_validation_failures = input_validation_results.select(&:failure?)
     input_validation_failures.each do |input_result|
       input_result.failure.errors.each do |error|
-        errors[:fact_bad_inputs][error.path] ||= Set.new
-        errors[:fact_bad_inputs][error.path].add(error.text)
+        input_errors[error.path] ||= Set.new
+        input_errors[error.path].add(error.text)
       end
     end
+
+    errors = {
+      fact_bad_inputs: input_errors,
+      fact_dependency_unmet: dependency_errors
+    }
 
     if errors[:fact_dependency_unmet].any? || errors[:fact_bad_inputs].any?
       data_errors = Dry::Monads::Failure(errors)
