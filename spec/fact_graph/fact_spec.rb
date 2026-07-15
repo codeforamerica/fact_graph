@@ -175,6 +175,79 @@ RSpec.describe FactGraph::Fact do
     end
   end
 
+  describe "null fact detection" do
+    before { FactGraph::Graph.graph_registry = [] }
+
+    def evaluate_single_fact(module_name, fact_name, input = {})
+      graph = FactGraph::Graph.prepare_fact_objects(input)
+      graph[module_name][fact_name].call(input, {})
+    end
+
+    it "raises when a resolver proc returns nil" do
+      Class.new(FactGraph::Graph) do
+        in_module :leaks do
+          fact :leaky do
+            proc { nil }
+          end
+        end
+      end
+      expect { evaluate_single_fact(:leaks, :leaky) }
+        .to raise_error(FactGraph::NullFactError, /:leaks\/:leaky resolved to nil/)
+    end
+
+    it "raises when an allow_unmet_dependencies fact returns nil on its unmet path" do
+      Class.new(FactGraph::Graph) do
+        in_module :leaks do
+          fact :missing_input do
+            input :missing_input, value: :integer
+          end
+          fact :leaky, allow_unmet_dependencies: true do
+            dependency :missing_input
+            proc { nil }
+          end
+        end
+      end
+      expect { evaluate_single_fact(:leaks, :leaky) }
+        .to raise_error(FactGraph::NullFactError, /:leaks\/:leaky resolved to nil/)
+    end
+
+    it "raises when an input fact passes through a nil value" do
+      Class.new(FactGraph::Graph) do
+        in_module :leaks do
+          fact :optional do
+            input [:wrapper, :optional]
+          end
+        end
+      end
+      expect { evaluate_single_fact(:leaks, :optional, {wrapper: {optional: nil}}) }
+        .to raise_error(FactGraph::NullFactError, /:leaks\/:optional resolved to nil/)
+    end
+
+    it "names the entity for a per-entity fact that returns nil" do
+      Class.new(FactGraph::Graph) do
+        in_module :leaks do
+          fact :leaky, per_entity: :items do
+            proc { nil }
+          end
+        end
+      end
+      expect { FactGraph::Evaluator.evaluate({items: [{}]}) }
+        .to raise_error(FactGraph::NullFactError, /:leaks\/:leaky \(entity 0\)/)
+    end
+
+    it "does not raise when a fact resolves to false" do
+      Class.new(FactGraph::Graph) do
+        in_module :ok do
+          fact :falsey do
+            proc { false }
+          end
+        end
+      end
+      result = evaluate_single_fact(:ok, :falsey)
+      expect(result).to eq false
+    end
+  end
+
   describe "short-form input with no value predicates" do
     before do
       FactGraph::Graph.graph_registry = []
