@@ -242,6 +242,17 @@ When a dependency has errors, the fact is skipped and its result contains:
 
 Use `FactGraph::Evaluator.input_errors(results)` to collect all `fact_bad_inputs` entries from a result set into a single hash.
 
+### Reading a single constant
+
+When you only need the value of a constant (a fact with no inputs or dependencies), `evaluate_constant` returns it without building or evaluating the rest of the graph:
+
+```ruby
+FactGraph::Evaluator.evaluate_constant(:pi)                        # => 3.14
+FactGraph::Evaluator.evaluate_constant(:tax_year, graph_class: Ty2024Graph)  # => 2024
+```
+
+It raises `ArgumentError` if the name is unknown, if the fact has inputs or dependencies (i.e. it isn't a constant), or if the name is ambiguous across modules — pass `module_filter:` to disambiguate.
+
 ## Context-specific graphs
 
 Use `ActiveSupport::Concern` mixins and graph subclasses to compose graphs for different contexts:
