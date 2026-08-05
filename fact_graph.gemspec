@@ -11,7 +11,12 @@ Gem::Specification.new do |spec|
   spec.summary = "For when you want to put your facts in a graph"
   spec.description = "It's a graph for facts"
   spec.homepage = "https://github.com/codeforamerica/fact_graph/blob/main/README.md"
-  spec.required_ruby_version = ">= 4.0.6"
+
+  ruby_version_file = File.expand_path(".ruby-version", __dir__)
+  if File.exist?(ruby_version_file)
+    version = File.read(ruby_version_file).strip
+    spec.required_ruby_version = ">= #{version}"
+  end
 
   spec.licenses = "Nonstandard"  # TODO: Change this when we go public
 
