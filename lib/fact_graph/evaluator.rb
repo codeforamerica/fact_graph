@@ -25,6 +25,26 @@ class FactGraph::Evaluator
       deep_freeze(results)
     end
 
+    # Read a single constant fact's value without building or evaluating the rest of the graph.
+    # A constant is a fact with no inputs and no dependencies (`constant(:name) { value }`).
+    def evaluate_constant(name, graph_class: nil, module_filter: nil)
+      graph_class ||= FactGraph::Graph
+      matches = graph_class.filter_graph(module_filter).select { |fact_kwargs| fact_kwargs[:name] == name }
+
+      raise ArgumentError, "No fact named :#{name}" if matches.empty?
+      if matches.size > 1
+        modules = matches.map { |fact_kwargs| fact_kwargs[:module_name] }
+        raise ArgumentError, "Ambiguous constant :#{name} defined in modules #{modules.inspect}; pass module_filter: to disambiguate"
+      end
+
+      fact = FactGraph::Fact.new(graph: {}, **matches.first)
+      if fact.resolver.respond_to?(:call) || fact.input_definitions.any? || fact.dependencies.any?
+        raise ArgumentError, "Fact :#{fact.module_name}/:#{name} is not a constant (constants take no inputs or dependencies)"
+      end
+
+      fact.resolver
+    end
+
     def key_matches_key_path?(key, key_path)
       return false unless key_path.is_a?(Array) && key_path.count.positive?
 
