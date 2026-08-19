@@ -180,6 +180,18 @@ end
 
 `data_errors` returns a `{ fact_incomplete_definition: ... }` sentinel that downstream facts can detect.
 
+#### A fact must never resolve to `nil`
+
+Every fact has to return a real value or signal an error (`data_errors` / an error
+hash). `nil` is not a valid result: it leaves the facts downstream unable to tell a
+missing value apart from a satisfied one, so the missing dependency propagates
+silently. The evaluator enforces this — a fact that resolves to `nil` raises
+`FactGraph::NullFactError` naming the offending fact. In practice this catches two
+mistakes: an `allow_unmet_dependencies` fact whose branch returns `nil` instead of
+`data_errors`, and an input fact whose validator permits `nil` (leave the `nil`
+case to an error instead of passing it through). Note that `false` is a valid
+value and does not raise.
+
 `must_match` is a convenience wrapper that runs a pattern-match block and falls back to `data_errors` on `NoMatchingPatternError`:
 
 ```ruby

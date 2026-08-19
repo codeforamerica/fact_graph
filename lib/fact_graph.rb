@@ -10,6 +10,10 @@ require_relative "fact_graph/version"
 module FactGraph
   class ValidationError < StandardError; end
 
+  # Raised when a fact resolves to nil instead of a value or an unmet-dependency
+  # error hash — nil leaves dependents unable to tell "missing" from "satisfied".
+  class NullFactError < StandardError; end
+
   class Graph
     @graph_registry = []
 

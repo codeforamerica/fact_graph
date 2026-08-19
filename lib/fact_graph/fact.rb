@@ -147,6 +147,7 @@ class FactGraph::Fact
     results[module_name] ||= {}
 
     if !resolver.respond_to?(:call)
+      forbid_nil!(resolver)
       results[module_name][name] = resolver
       return resolver
     end
@@ -195,11 +196,25 @@ class FactGraph::Fact
       resolved_errors = data_errors
     end
 
+    value = resolved_errors || data.instance_exec(&resolver)
+    forbid_nil!(value)
+
     if per_entity
       results[module_name][name] ||= {}
-      results[module_name][name][entity_id] = resolved_errors || data.instance_exec(&resolver)
+      results[module_name][name][entity_id] = value
     else
-      results[module_name][name] = resolved_errors || data.instance_exec(&resolver)
+      results[module_name][name] = value
     end
+  end
+
+  private
+
+  def forbid_nil!(value)
+    return unless value.nil?
+
+    fact_ref = per_entity ? ":#{module_name}/:#{name} (entity #{entity_id})" : ":#{module_name}/:#{name}"
+    raise FactGraph::NullFactError,
+      "Fact #{fact_ref} resolved to nil. A fact must return a value or signal an " \
+      "unmet dependency (return the error hash / data_errors), never nil."
   end
 end
