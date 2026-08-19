@@ -195,6 +195,18 @@ RSpec.describe FactGraph::Fact do
         .to raise_error(FactGraph::NullFactError, /:leaks\/:leaky resolved to nil/)
     end
 
+    it "raises when a fact has a non-callable nil resolver" do
+      Class.new(FactGraph::Graph) do
+        in_module :leaks do
+          fact :nil_constant do
+            nil
+          end
+        end
+      end
+      expect { evaluate_single_fact(:leaks, :nil_constant) }
+        .to raise_error(FactGraph::NullFactError, /:leaks\/:nil_constant resolved to nil/)
+    end
+
     it "raises when an allow_unmet_dependencies fact returns nil on its unmet path" do
       Class.new(FactGraph::Graph) do
         in_module :leaks do
