@@ -111,6 +111,7 @@ class FactGraph::Evaluator
         deep_freeze(v)
       }
       when Array, Set then obj.each { |v| deep_freeze(v) }
+      when Data then obj.deconstruct_keys(nil).each_value { |v| deep_freeze(v) }
       end
       obj.freeze
     end
