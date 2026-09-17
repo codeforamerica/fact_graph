@@ -16,5 +16,10 @@ module FactGraph
     end
 
     def [](key) = to_h[key]
+
+    # A failure is never a value worth rendering, so it collapses to nil under
+    # Rails' `#presence` the same way `false`/`nil`/blank strings do — callers
+    # that just want "a value or nothing" don't need to special-case failures.
+    def blank? = true
   end
 end
