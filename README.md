@@ -232,12 +232,12 @@ Results are a nested hash keyed by module name, then fact name:
 
 ### Error results
 
-When input fails validation, or a dependency has errors, the fact is skipped and its result is a `FactGraph::Failure` (a `Data.define`d value with `fact_bad_inputs` and `fact_dependency_unmet` members). It still supports pattern matching like a hash (`in { fact_bad_inputs:, fact_dependency_unmet: }`), since `Data` generates `#deconstruct_keys` for free.
+When input fails validation, or a dependency has errors, the fact is skipped and its result is a `FactGraph::Error` (a `Data.define`d value with `fact_bad_inputs` and `fact_dependency_unmet` members). It still supports pattern matching like a hash (`in { fact_bad_inputs:, fact_dependency_unmet: }`), since `Data` generates `#deconstruct_keys` for free.
 
 Bad input:
 
 ```ruby
-FactGraph::Failure.new(
+FactGraph::Error.new(
   fact_bad_inputs: {
     [:circles, 0, :radius] => #<Set {"must be an integer"}>,
   },
@@ -248,7 +248,7 @@ FactGraph::Failure.new(
 Unmet dependency:
 
 ```ruby
-FactGraph::Failure.new(
+FactGraph::Error.new(
   fact_bad_inputs: {},
   fact_dependency_unmet: { circle_facts: [:areas] }
 )

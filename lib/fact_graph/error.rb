@@ -3,7 +3,7 @@ module FactGraph
   # dependencies failed to resolve. Supports pattern matching the same way the
   # plain hash it replaces did (`in {fact_bad_inputs:, fact_dependency_unmet:}`),
   # since `Data` generates `#deconstruct_keys` for free.
-  Failure = Data.define(:fact_bad_inputs, :fact_dependency_unmet) do
+  Error = Data.define(:fact_bad_inputs, :fact_dependency_unmet) do
     def self.empty
       new(
         fact_bad_inputs: {},
@@ -17,9 +17,9 @@ module FactGraph
 
     def [](key) = to_h[key]
 
-    # A failure is never a value worth rendering, so it collapses to nil under
+    # An error is never a value worth rendering, so it collapses to nil under
     # Rails' `#presence` the same way `false`/`nil`/blank strings do — callers
-    # that just want "a value or nothing" don't need to special-case failures.
+    # that just want "a value or nothing" don't need to special-case errors.
     def blank? = true
   end
 end

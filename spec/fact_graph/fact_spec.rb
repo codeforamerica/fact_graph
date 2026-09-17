@@ -35,7 +35,7 @@ RSpec.describe FactGraph::Fact do
               zip_code: "10123"
             }
           },
-          FactGraph::Failure.new(fact_bad_inputs: {}, fact_dependency_unmet: {})
+          FactGraph::Error.new(fact_bad_inputs: {}, fact_dependency_unmet: {})
         )
         graph[:contact_info][:formatted_address].call(input, {})
       end
@@ -130,7 +130,7 @@ RSpec.describe FactGraph::Fact do
         results = {}
         graph[:contact_info][:street_number].call(input, results)
         expect(results[:contact_info][:street_number]).to eq(
-          FactGraph::Failure.new(
+          FactGraph::Error.new(
             fact_bad_inputs: {[:street_address, :street_number] => Set.new(["must be greater than or equal to 0"])},
             fact_dependency_unmet: {}
           )

@@ -5,7 +5,7 @@ require "active_support/core_ext/object/blank"
 
 require_relative "fact_graph/data_container"
 require_relative "fact_graph/evaluator"
-require_relative "fact_graph/failure"
+require_relative "fact_graph/error"
 require_relative "fact_graph/fact"
 require_relative "fact_graph/version"
 

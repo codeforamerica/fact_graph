@@ -170,7 +170,7 @@ class FactGraph::Fact
       }
     )
 
-    errors = FactGraph::Failure.empty
+    errors = FactGraph::Error.empty
 
     validate_input(data.data[:input], errors)
 
