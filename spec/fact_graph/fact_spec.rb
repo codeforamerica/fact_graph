@@ -33,8 +33,9 @@ RSpec.describe FactGraph::Fact do
               state: "New York",
               zip_code: "10123"
             }
-          }
-        ).and_call_original
+          },
+          {fact_bad_inputs: {}, fact_dependency_unmet: {}}
+        )
         graph[:contact_info][:formatted_address].call(input, {})
       end
     end
@@ -57,7 +58,7 @@ RSpec.describe FactGraph::Fact do
       it "should render a good value" do
         results = {}
         graph[:contact_info][:can_receive_mail].call(input, results)
-        expect(results[:contact_info][:can_receive_mail]).to eq Dry::Monads::Success(false)
+        expect(results[:contact_info][:can_receive_mail]).to eq false
       end
     end
 
@@ -93,7 +94,7 @@ RSpec.describe FactGraph::Fact do
         it "should return the appropriate value" do
           results = {}
           graph[:contact_info][:can_receive_mail].call(input, results)
-          expect(results[:contact_info][:can_receive_mail]).to eq Dry::Monads::Success(false)
+          expect(results[:contact_info][:can_receive_mail]).to eq false
         end
       end
     end

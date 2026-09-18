@@ -22,7 +22,7 @@ class FactGraph::Evaluator
           call_fact(fact, input, results)
         end
       end
-      deep_freeze(FactGraph.deep_unwrap_successes(results))
+      deep_freeze(results)
     end
 
     def key_matches_key_path?(key, key_path)
@@ -111,7 +111,6 @@ class FactGraph::Evaluator
         deep_freeze(v)
       }
       when Array, Set then obj.each { |v| deep_freeze(v) }
-      when Dry::Monads::Success then deep_freeze(obj.value!)
       when Dry::Monads::Failure then deep_freeze(obj.failure)
       end
       obj.freeze
