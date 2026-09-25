@@ -1,8 +1,8 @@
 def bad_fact_matcher
-  {
+  have_attributes(
     fact_bad_inputs: anything,
     fact_dependency_unmet: anything
-  }
+  )
 end
 
 RSpec.describe "Entity Facts" do

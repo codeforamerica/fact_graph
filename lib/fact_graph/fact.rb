@@ -130,8 +130,8 @@ class FactGraph::Fact
       result = input_validator.call("#{input_name}": input[input_name])
       if result.failure?
         result.errors.each do |error|
-          errors[:fact_bad_inputs][error.path] ||= Set.new
-          errors[:fact_bad_inputs][error.path].add(error.text)
+          errors.fact_bad_inputs[error.path] ||= Set.new
+          errors.fact_bad_inputs[error.path].add(error.text)
         end
       end
     end
@@ -158,7 +158,7 @@ class FactGraph::Fact
       elsif dependency.is_a? Hash
         dependency
           .transform_values { |fact| fact.call(input, results) }
-          .filter { |_entity_id, result| !(result in {fact_dependency_unmet:, fact_bad_inputs:}) }
+          .reject { |_entity_id, result| result.is_a? FactGraph::Error }
       end
     end
 
@@ -170,21 +170,18 @@ class FactGraph::Fact
       }
     )
 
-    errors = {
-      fact_bad_inputs: {},
-      fact_dependency_unmet: Hash.new { |h, key| h[key] = [] }
-    }
+    errors = FactGraph::Error.empty
 
     validate_input(data.data[:input], errors)
 
     data.data[:dependencies].each do |key, dependency|
-      if dependency in {fact_dependency_unmet: Hash} | {fact_bad_inputs: Array}
+      if dependency.is_a? FactGraph::Error
         bad_module = dependency_facts[key].module_name
-        errors[:fact_dependency_unmet][bad_module] << key
+        errors.fact_dependency_unmet[bad_module] << key
       end
     end
 
-    if errors[:fact_dependency_unmet].any? || errors[:fact_bad_inputs].any?
+    if errors.any?
       data_errors = errors
     end
 

@@ -35,7 +35,7 @@ RSpec.describe FactGraph::Fact do
               zip_code: "10123"
             }
           },
-          {fact_bad_inputs: {}, fact_dependency_unmet: {}}
+          FactGraph::Error.new(fact_bad_inputs: {}, fact_dependency_unmet: {})
         )
         graph[:contact_info][:formatted_address].call(input, {})
       end
@@ -129,9 +129,11 @@ RSpec.describe FactGraph::Fact do
       it "returns an input-validation error" do
         results = {}
         graph[:contact_info][:street_number].call(input, results)
-        expect(results[:contact_info][:street_number]).to match(
-          fact_bad_inputs: {[:street_address, :street_number] => Set.new(["must be greater than or equal to 0"])},
-          fact_dependency_unmet: {}
+        expect(results[:contact_info][:street_number]).to eq(
+          FactGraph::Error.new(
+            fact_bad_inputs: {[:street_address, :street_number] => Set.new(["must be greater than or equal to 0"])},
+            fact_dependency_unmet: {}
+          )
         )
       end
     end
@@ -285,7 +287,7 @@ RSpec.describe FactGraph::Fact do
       graph = FactGraph::Graph.prepare_fact_objects(input)
       results = {}
       graph[:unvalidated_facts][:anything].call(input, results)
-      expect(results[:unvalidated_facts][:anything]).to match(
+      expect(results[:unvalidated_facts][:anything]).to have_attributes(
         fact_bad_inputs: hash_including([:wrapper, :anything]),
         fact_dependency_unmet: {}
       )
