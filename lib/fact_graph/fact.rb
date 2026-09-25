@@ -158,7 +158,7 @@ class FactGraph::Fact
       elsif dependency.is_a? Hash
         dependency
           .transform_values { |fact| fact.call(input, results) }
-          .filter { |_entity_id, result| !(result in {fact_dependency_unmet:, fact_bad_inputs:}) }
+          .reject { |_entity_id, result| result.is_a? FactGraph::Error }
       end
     end
 
@@ -175,7 +175,7 @@ class FactGraph::Fact
     validate_input(data.data[:input], errors)
 
     data.data[:dependencies].each do |key, dependency|
-      if dependency in {fact_dependency_unmet: Hash} | {fact_bad_inputs: Array}
+      if dependency.is_a? FactGraph::Error
         bad_module = dependency_facts[key].module_name
         errors.fact_dependency_unmet[bad_module] << key
       end
