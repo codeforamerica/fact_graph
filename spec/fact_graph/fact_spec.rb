@@ -6,7 +6,7 @@ RSpec.describe FactGraph::Fact do
   end
 
   describe "#call" do
-    let(:graph) { ContactInfoGraph.prepare_fact_objects(input) }
+    let(:graph) { ContactInfo.prepare_fact_objects(input) }
 
     context "when called with structured input that contains more fields than are required by a fact" do
       let(:input) do
@@ -101,7 +101,7 @@ RSpec.describe FactGraph::Fact do
   end
 
   describe "nested input facts" do
-    let(:graph) { ContactInfoGraph.prepare_fact_objects(input) }
+    let(:graph) { ContactInfo.prepare_fact_objects(input) }
     let(:input) do
       {
         snail_mail_opt_in: false,

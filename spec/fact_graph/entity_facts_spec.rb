@@ -10,7 +10,7 @@ RSpec.describe "Entity Facts" do
     load "spec/fixtures/entities.rb"
   end
 
-  let(:results) { FactGraph::Evaluator.evaluate(input, graph_class: ApplicantGraph) }
+  let(:results) { FactGraph::Evaluator.evaluate(input, graph_class: ApplicantFacts) }
 
   context "with no entities in input" do
     let(:input) { {} }
@@ -50,7 +50,7 @@ RSpec.describe "Entity Facts" do
 
     describe "FactGraph.entity_map" do
       it "returns an entity map that includes a correct map of entity names and ids" do
-        expect(ApplicantGraph.entity_map(input)).to eq({applicants: [0, 1]})
+        expect(ApplicantFacts.entity_map(input)).to eq({applicants: [0, 1]})
       end
     end
   end
