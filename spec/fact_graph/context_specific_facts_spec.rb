@@ -1,8 +1,8 @@
 RSpec.describe "Context-specific facts" do
   before do
-    FactGraph::Graph.graph_registry = []
     load "spec/fixtures/context_specific_facts/filer.rb"
     load "spec/fixtures/context_specific_facts/dependent.rb"
+    load "spec/fixtures/context_specific_facts/tax_year_graph.rb"
     load "spec/fixtures/context_specific_facts/ty_2024_graph.rb"
     load "spec/fixtures/context_specific_facts/ty_2025_graph.rb"
   end

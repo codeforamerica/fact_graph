@@ -16,18 +16,22 @@ module FactGraph
   # error hash — nil leaves dependents unable to tell "missing" from "satisfied".
   class NullFactError < StandardError; end
 
+  # A graph is a class whose facts (its own plus those it inherits) are
+  # evaluated together. Compose graphs by including fact mixins and by
+  # subclassing: a subclass sees all of its parent's facts, and a fact it
+  # defines replaces any inherited fact with the same module and name.
   class Graph
-    @graph_registry = []
-
     class << self
-      attr_accessor :graph_registry
-
       def module_name = @module_name || to_s.underscore.split("/").last.to_sym
 
-      def inherited(subclass)
-        super
-        subclass.graph_registry = []
+      # Built on read rather than copied at definition time, so facts added to
+      # a parent after a subclass is defined are still visible to the subclass.
+      def fact_definitions
+        inherited = equal?(Graph) ? {} : superclass.fact_definitions
+        inherited.merge(own_fact_definitions)
       end
+
+      def graph_registry = fact_definitions.values
 
       def in_module(module_name, &blk)
         previous_module = @module_name
@@ -37,7 +41,7 @@ module FactGraph
       end
 
       def fact(name, **kwargs, &def_proc)
-        superclass.graph_registry << {module_name:, name:, def_proc:, **kwargs}
+        own_fact_definitions[[module_name, name]] = {module_name:, name:, def_proc:, **kwargs}
       end
       alias_method :constant, :fact
 
@@ -92,6 +96,10 @@ module FactGraph
         end
         entity_map
       end
+
+      private
+
+      def own_fact_definitions = @own_fact_definitions ||= {}
     end
   end
 end

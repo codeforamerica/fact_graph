@@ -77,17 +77,7 @@ fact :eligible_count do
 end
 ```
 
-**Graph Subclasses and Fact Registration** - Facts defined in a class are registered on that class's **parent's** `graph_registry`, not the class itself. This enables composition patterns:
-
-```ruby
-# Simple case: facts go to FactGraph::Graph.graph_registry
-class MyFacts < FactGraph::Graph
-  fact :foo do ... end
-end
-FactGraph::Evaluator.evaluate(input, graph_class: FactGraph::Graph)
-```
-
-**Multiple Contexts with Shared Facts** - Use intermediate classes and mixins to create separate graphs that share some facts but differ in others:
+**Graphs, Inheritance, and Fact Registration** - A graph class evaluates its own facts plus every fact it inherits from its ancestors. Facts never flow up or sideways: sibling graphs do not see each other, and nothing is registered on `FactGraph::Graph`. `Evaluator.evaluate` requires an explicit `graph_class:`. A fact defined with the same module and name as an inherited (or earlier) one replaces it entirely. The registry is built on read (`fact_definitions` walks the superclass chain), so facts added to a parent after a subclass is defined are still visible.
 
 ```ruby
 # Shared facts as a mixin (uses ActiveSupport::Concern)
@@ -100,29 +90,29 @@ module SharedEligibility
   end
 end
 
-# Context-specific graphs with separate registries
-class Colorado2024Graph < FactGraph::Graph; end
-class Colorado2024 < Colorado2024Graph
+# Shared base with default policy. Never evaluated directly.
+class ColoradoGraph < FactGraph::Graph
   include SharedEligibility
   in_module :limits do
-    constant(:income_limit) { 30_000 }  # 2024-specific
+    constant(:income_limit) { 30_000 }
   end
 end
 
-class Colorado2025Graph < FactGraph::Graph; end
-class Colorado2025 < Colorado2025Graph
-  include SharedEligibility
+# Same policy as the default: an empty subclass
+class Colorado2024 < ColoradoGraph; end
+
+# Overrides one constant
+class Colorado2025 < ColoradoGraph
   in_module :limits do
-    constant(:income_limit) { 32_000 }  # 2025-specific
+    constant(:income_limit) { 32_000 }
   end
 end
 
-# Evaluate each context separately
-FactGraph::Evaluator.evaluate(input, graph_class: Colorado2024Graph)
-FactGraph::Evaluator.evaluate(input, graph_class: Colorado2025Graph)
+FactGraph::Evaluator.evaluate(input, graph_class: Colorado2024)
+FactGraph::Evaluator.evaluate(input, graph_class: Colorado2025)
 ```
 
-The intermediate classes (`Colorado2024Graph`, `Colorado2025Graph`) each have their own `graph_registry`, so facts don't mix between contexts. See `spec/fixtures/context_specific_facts/` for complete examples.
+Sibling contexts (e.g. tax years) should each subclass a shared base rather than one another, so no context is implicitly the "default". Facts defined outside `in_module` get a module name derived from the defining class, so a subclass overriding them would land in a different module. Prefer `in_module` in graphs meant to be subclassed. See `spec/fixtures/context_specific_facts/` and `spec/fact_graph/graph_spec.rb`.
 
 **Pattern Matching** - Resolver procs use Ruby pattern matching to destructure data:
 ```ruby

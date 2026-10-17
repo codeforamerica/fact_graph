@@ -5,11 +5,8 @@ RSpec.describe FactGraph do
     expect(FactGraph::VERSION).not_to be nil
   end
 
-  let(:results) { FactGraph::Evaluator.evaluate(input) }
-
-  before do
-    FactGraph::Graph.graph_registry = []
-  end
+  let(:graph_class) { Class.new(FactGraph::Graph) }
+  let(:results) { FactGraph::Evaluator.evaluate(input, graph_class:) }
 
   context "with no facts defined" do
     context "with no input" do
@@ -33,6 +30,8 @@ RSpec.describe FactGraph do
     before do
       load "spec/fixtures/math.rb"
     end
+
+    let(:graph_class) { MathGraph }
 
     context "with no input" do
       let(:input) { {} }

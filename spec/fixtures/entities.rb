@@ -1,45 +1,47 @@
-class ApplicantFacts < FactGraph::Graph
-  fact :income, per_entity: :applicants do
-    input :income, per_entity: true, value: :integer
-  end
+class ApplicantGraph < FactGraph::Graph
+  in_module :applicant_facts do
+    fact :income, per_entity: :applicants do
+      input :income, per_entity: true, value: :integer
+    end
 
-  fact :age, per_entity: :applicants do
-    input :age, per_entity: true, value: :integer
-  end
+    fact :age, per_entity: :applicants do
+      input :age, per_entity: true, value: :integer
+    end
 
-  fact :eligible, per_entity: :applicants, allow_unmet_dependencies: true do
-    dependency :income
-    dependency :age
+    fact :eligible, per_entity: :applicants, allow_unmet_dependencies: true do
+      dependency :income
+      dependency :age
 
-    proc do
-      data in dependencies: {income:, age:}
-      if (income.is_a?(Integer) && income < 100) ||
-          (age.is_a?(Integer) && age > 100)
-        true
-      elsif (income in {fact_bad_inputs:, fact_dependency_unmet:}) ||
-          (age in {fact_bad_inputs:, fact_dependency_unmet:})
-        data_errors
-      else
-        false
+      proc do
+        data in dependencies: {income:, age:}
+        if (income.is_a?(Integer) && income < 100) ||
+            (age.is_a?(Integer) && age > 100)
+          true
+        elsif (income in {fact_bad_inputs:, fact_dependency_unmet:}) ||
+            (age in {fact_bad_inputs:, fact_dependency_unmet:})
+          data_errors
+        else
+          false
+        end
       end
     end
-  end
 
-  fact :num_eligible_applicants do
-    dependency :eligible
+    fact :num_eligible_applicants do
+      dependency :eligible
 
-    proc do
-      data in dependencies: {eligible:}
-      eligible.values.count { |v| v == true }
+      proc do
+        data in dependencies: {eligible:}
+        eligible.values.count { |v| v == true }
+      end
     end
-  end
 
-  fact :total_applicant_income do
-    dependency :income
+    fact :total_applicant_income do
+      dependency :income
 
-    proc do
-      data in dependencies: {income:}
-      income.sum { |k, v| v }
+      proc do
+        data in dependencies: {income:}
+        income.sum { |k, v| v }
+      end
     end
   end
 end
