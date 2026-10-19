@@ -77,7 +77,7 @@ fact :eligible_count do
 end
 ```
 
-**Graphs, Inheritance, and Fact Registration** - A graph class evaluates its own facts plus every fact it inherits from its ancestors. Facts never flow up or sideways: sibling graphs do not see each other, and nothing is registered on `FactGraph::Graph`. `Evaluator.evaluate` requires an explicit `graph_class:`. A fact defined with the same module and name as an inherited (or earlier) one replaces it entirely. The registry is built on read (`fact_definitions` walks the superclass chain), so facts added to a parent after a subclass is defined are still visible.
+**Graphs, Inheritance, and Fact Registration** - A graph class evaluates its own facts plus every fact it inherits from its ancestors. Facts never flow up or sideways: sibling graphs do not see each other, and nothing is registered on `FactGraph::Graph`. `Evaluator.evaluate` requires an explicit `graph_class:`. A fact defined with the same module and name as an inherited (or earlier) one replaces it entirely. The registry is a `class_attribute` (`fact_definitions`, a frozen hash keyed by `[module_name, name]`), and each `fact` call assigns a new merged hash. Because a subclass stops seeing its parent's later additions once it defines its own facts, defining a fact on a graph that already has subclasses raises `FactDefinitionsLockedError`: graphs must be fully defined at class load time.
 
 ```ruby
 # Shared facts as a mixin (uses ActiveSupport::Concern)

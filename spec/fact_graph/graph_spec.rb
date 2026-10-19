@@ -81,11 +81,13 @@ RSpec.describe FactGraph::Graph do
       expect(FactGraph::Evaluator.input_errors(results)).to be_empty
     end
 
-    it "sees facts added to the parent after the subclass was defined" do
+    it "raises when a fact is added to a graph that already has subclasses" do
       child_graph
+      module_name_before = base_graph.module_name
       expect {
         base_graph.in_module(:limits) { base_graph.constant(:late_addition) { :present } }
-      }.to raise_error(FactGraph::FactDefinitionsLockedError)
+      }.to raise_error(FactGraph::FactDefinitionsLockedError, /limits\/late_addition/)
+      expect(base_graph.module_name).to eq module_name_before
     end
   end
 

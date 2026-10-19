@@ -17,9 +17,8 @@ module FactGraph
   # error hash — nil leaves dependents unable to tell "missing" from "satisfied".
   class NullFactError < StandardError; end
 
-  # Raised if a fact is added after subclasses have been loaded - our proxy for class
-  # load time. This prevents monkeypatching and enforces the declarative nature of
-  # the fact graph.
+  # Raised when a fact is defined on a graph that already has subclasses, which
+  # wouldn't see it. Graphs are meant to be fully defined at class load time.
   class FactDefinitionsLockedError < StandardError; end
 
   # A graph is a class whose facts (its own plus those it inherits) are
@@ -38,11 +37,12 @@ module FactGraph
         previous_module = @module_name
         @module_name = module_name
         yield
+      ensure
         @module_name = previous_module
       end
 
       def fact(name, **kwargs, &def_proc)
-        raise FactDefinitionsLockedError.new("No adding facts at runtime!") if subclasses.present?
+        raise FactDefinitionsLockedError, "can't define #{module_name}/#{name} on #{self}: it already has subclasses" if subclasses.present?
         self.fact_definitions = fact_definitions.merge({[module_name, name] => {module_name:, name:, def_proc:, **kwargs}}).freeze
       end
       alias_method :constant, :fact
