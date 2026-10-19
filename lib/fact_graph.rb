@@ -2,6 +2,7 @@
 
 require "active_support/core_ext/string"
 require "active_support/core_ext/object/blank"
+require "active_support/core_ext/class/attribute"
 
 require_relative "fact_graph/data_container"
 require_relative "fact_graph/evaluator"
@@ -16,20 +17,20 @@ module FactGraph
   # error hash — nil leaves dependents unable to tell "missing" from "satisfied".
   class NullFactError < StandardError; end
 
+  # Raised if a fact is added after subclasses have been loaded - our proxy for class
+  # load time. This prevents monkeypatching and enforces the declarative nature of
+  # the fact graph.
+  class FactDefinitionsLockedError < StandardError; end
+
   # A graph is a class whose facts (its own plus those it inherits) are
   # evaluated together. Compose graphs by including fact mixins and by
   # subclassing: a subclass sees all of its parent's facts, and a fact it
   # defines replaces any inherited fact with the same module and name.
   class Graph
+    class_attribute :fact_definitions, instance_accessor: false, default: {}.freeze
+
     class << self
       def module_name = @module_name || to_s.underscore.split("/").last.to_sym
-
-      # Built on read rather than copied at definition time, so facts added to
-      # a parent after a subclass is defined are still visible to the subclass.
-      def fact_definitions
-        inherited = equal?(Graph) ? {} : superclass.fact_definitions
-        inherited.merge(own_fact_definitions)
-      end
 
       def graph_registry = fact_definitions.values
 
@@ -41,7 +42,8 @@ module FactGraph
       end
 
       def fact(name, **kwargs, &def_proc)
-        own_fact_definitions[[module_name, name]] = {module_name:, name:, def_proc:, **kwargs}
+        raise FactDefinitionsLockedError.new("No adding facts at runtime!") if subclasses.present?
+        self.fact_definitions = fact_definitions.merge({[module_name, name] => {module_name:, name:, def_proc:, **kwargs}}).freeze
       end
       alias_method :constant, :fact
 
@@ -96,10 +98,6 @@ module FactGraph
         end
         entity_map
       end
-
-      private
-
-      def own_fact_definitions = @own_fact_definitions ||= {}
     end
   end
 end
