@@ -143,6 +143,40 @@ RSpec.describe FactGraph::Evaluator do
     end
   end
 
+  describe "graph queries with module_filter" do
+    it "limits facts_using_input to the given modules" do
+      expect(described_class.facts_using_input([:scale], graph_class: MathGraph, module_filter: [:math_facts]).map(&:name)).to eq [:squared_scale]
+      expect(described_class.facts_using_input([:scale], graph_class: MathGraph, module_filter: [:circle_facts])).to eq []
+    end
+
+    it "limits facts_with_dependency to the given modules" do
+      expect(described_class.facts_with_dependency(:math_facts, :pi, graph_class: MathGraph, module_filter: [:circle_facts]).map(&:name)).to eq [:areas]
+      expect(described_class.facts_with_dependency(:math_facts, :pi, graph_class: MathGraph, module_filter: [:math_facts])).to eq []
+    end
+  end
+
+  describe "graph queries on a graph with per-entity facts" do
+    before do
+      load "spec/fixtures/entities.rb"
+    end
+
+    it "finds per-entity facts by the input key path relative to the entity" do
+      results = described_class.facts_using_input([:income], graph_class: ApplicantFacts)
+      expect(results.map { |fact| [fact.module_name, fact.name] }).to eq [[:applicant_facts, :income]]
+    end
+
+    it "returns one fact per definition, not one per entity" do
+      results = described_class.facts_with_dependency(:applicant_facts, :income, graph_class: ApplicantFacts)
+      expect(results.map(&:name)).to contain_exactly(:eligible, :total_applicant_income)
+      expect(results).to all(be_a(FactGraph::Fact))
+    end
+
+    it "traces an entity input through per-entity facts to the aggregate leaf facts" do
+      results = described_class.leaf_facts_depending_on_input([:income], graph_class: ApplicantFacts)
+      expect(results.map(&:name)).to contain_exactly(:num_eligible_applicants, :total_applicant_income)
+    end
+  end
+
   describe ".evaluate" do
     context "deep freezes results" do
       let(:input) { {scale: 5, circles: [{radius: 1}, {radius: 2}]} }
@@ -182,6 +216,23 @@ RSpec.describe FactGraph::Evaluator do
   describe ".input_errors" do
     let!(:evaluation_results) { described_class.evaluate(input, graph_class: MathGraph) }
     let(:results) { FactGraph::Evaluator.input_errors(evaluation_results) }
+
+    context "when two facts report errors for the same input" do
+      let(:input) { {} }
+      let(:graph_class) do
+        Class.new(FactGraph::Graph) do
+          in_module :shared_input do
+            fact(:as_integer) { input :scale, value: :integer }
+            fact(:as_string) { input :scale, value: :string }
+          end
+        end
+      end
+
+      it "combines their messages" do
+        results = described_class.evaluate(input, graph_class:)
+        expect(described_class.input_errors(results)).to eq({[:scale] => Set["must be an integer", "must be a string"]})
+      end
+    end
 
     context "when you evaluate with no input" do
       let(:input) { {} }

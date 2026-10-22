@@ -49,23 +49,17 @@ class FactGraph::Evaluator
     end
 
     def facts_using_input(query_input, graph_class:, module_filter: nil)
-      graph = graph_class.prepare_fact_objects(module_filter)
-      graph.flat_map do |_, facts|
-        facts.select do |_, fact|
-          fact.input_definitions.any? do |_, input_definition|
-            validator = input_definition[:validator]
-            key_matches_key_path?(validator.key_map, query_input)
-          end
-        end.values
+      graph_class.fact_objects(module_filter).select do |fact|
+        fact.input_definitions.any? do |_, input_definition|
+          validator = input_definition[:validator]
+          key_matches_key_path?(validator.key_map, query_input)
+        end
       end
     end
 
     def facts_with_dependency(query_module_name, query_fact_name, graph_class:, module_filter: nil)
-      graph = graph_class.prepare_fact_objects(module_filter)
-      graph.flat_map do |_, facts|
-        facts.select do |_, fact|
-          fact.dependencies[query_fact_name] == query_module_name
-        end.values
+      graph_class.fact_objects(module_filter).select do |fact|
+        fact.dependencies[query_fact_name] == query_module_name
       end
     end
 
@@ -89,10 +83,13 @@ class FactGraph::Evaluator
       errors = {}
       results.each_value do |facts|
         facts.each_value do |result|
-          next unless result.is_a? FactGraph::Error
-
-          errors.merge!(result.fact_bad_inputs) do |_bad_input_key_path, old_error_messages, new_error_messages|
-            old_error_messages.merge(new_error_messages)
+          # Per-entity facts resolve to {entity_id => result}
+          entity_results = result.is_a?(Hash) ? result.values : [result]
+          entity_results.grep(FactGraph::Error).each do |error|
+            # Results are frozen, so combine messages into a new Set rather than merging in place.
+            errors.merge!(error.fact_bad_inputs) do |_bad_input_key_path, old_error_messages, new_error_messages|
+              old_error_messages | new_error_messages
+            end
           end
         end
       end
