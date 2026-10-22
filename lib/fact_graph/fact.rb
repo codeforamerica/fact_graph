@@ -128,11 +128,15 @@ class FactGraph::Fact
     input_definitions.each do |input_name, input_definition|
       input_validator = input_definition[:validator]
       result = input_validator.call("#{input_name}": input[input_name])
-      if result.failure?
-        result.errors.each do |error|
-          errors.fact_bad_inputs[error.path] ||= Set.new
-          errors.fact_bad_inputs[error.path].add(error.text)
-        end
+      next unless result.failure?
+
+      # Per-entity inputs are validated on their own, so prefix the entity's location
+      # to report the error at its full path in the input.
+      path_prefix = input_definition[:per_entity] ? [per_entity, entity_id] : []
+      result.errors.each do |error|
+        path = path_prefix + error.path
+        errors.fact_bad_inputs[path] ||= Set.new
+        errors.fact_bad_inputs[path].add(error.text)
       end
     end
   end

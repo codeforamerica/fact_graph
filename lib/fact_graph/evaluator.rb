@@ -83,10 +83,12 @@ class FactGraph::Evaluator
       errors = {}
       results.each_value do |facts|
         facts.each_value do |result|
-          next unless result.is_a? FactGraph::Error
-
-          errors.merge!(result.fact_bad_inputs) do |_bad_input_key_path, old_error_messages, new_error_messages|
-            old_error_messages.merge(new_error_messages)
+          # Per-entity facts resolve to {entity_id => result}
+          entity_results = result.is_a?(Hash) ? result.values : [result]
+          entity_results.grep(FactGraph::Error).each do |error|
+            errors.merge!(error.fact_bad_inputs) do |_bad_input_key_path, old_error_messages, new_error_messages|
+              old_error_messages.merge(new_error_messages)
+            end
           end
         end
       end

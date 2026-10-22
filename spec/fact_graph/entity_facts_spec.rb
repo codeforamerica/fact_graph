@@ -81,6 +81,22 @@ RSpec.describe "Entity Facts" do
     end
   end
 
+  describe "input errors on per-entity inputs" do
+    let(:input) { {applicants: [{income: 99, age: 30}, {income: "lots"}]} }
+
+    it "keys the error by the full input path, including the entity name and ID" do
+      expect(results[:applicant_facts][:income][1].fact_bad_inputs).to eq({[:applicants, 1, :income] => Set.new(["must be an integer"])})
+      expect(results[:applicant_facts][:age][1].fact_bad_inputs).to eq({[:applicants, 1, :age] => Set.new(["must be an integer"])})
+    end
+
+    it "is collected by Evaluator.input_errors" do
+      expect(FactGraph::Evaluator.input_errors(results)).to eq({
+        [:applicants, 1, :income] => Set.new(["must be an integer"]),
+        [:applicants, 1, :age] => Set.new(["must be an integer"])
+      })
+    end
+  end
+
   describe "aggregate facts dependency filtering" do
     context "when all dependency facts have good values" do
       let(:input) { {applicants: [{income: 99}, {income: 101}]} }
