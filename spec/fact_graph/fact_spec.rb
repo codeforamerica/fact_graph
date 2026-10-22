@@ -293,4 +293,38 @@ RSpec.describe FactGraph::Fact do
       )
     end
   end
+
+  describe "compiled definitions" do
+    let(:graph_class) { Class.new(FactGraph::Graph) }
+
+    it "runs each definition block once, however many times the graph is evaluated" do
+      runs = 0
+      graph_class.class_eval do
+        fact :double, per_entity: :items do
+          runs += 1
+          input :n, per_entity: true, value: :integer
+          proc { data[:input][:n] * 2 }
+        end
+      end
+
+      first = FactGraph::Evaluator.evaluate({items: [{n: 1}, {n: 2}]}, graph_class:)
+      second = FactGraph::Evaluator.evaluate({items: [{n: 5}]}, graph_class:)
+
+      expect(runs).to eq 1
+      expect(first.values.first[:double]).to eq({0 => 2, 1 => 4})
+      expect(second.values.first[:double]).to eq({0 => 10})
+    end
+
+    it "shares compiled parts that can't be changed" do
+      graph_class.class_eval do
+        fact :x do
+          input :x, value: :integer
+        end
+      end
+
+      fact = graph_class.fact_objects.first
+      expect(fact.input_definitions).to be_frozen
+      expect(fact.dependencies).to be_frozen
+    end
+  end
 end
