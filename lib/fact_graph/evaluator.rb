@@ -86,8 +86,9 @@ class FactGraph::Evaluator
           # Per-entity facts resolve to {entity_id => result}
           entity_results = result.is_a?(Hash) ? result.values : [result]
           entity_results.grep(FactGraph::Error).each do |error|
+            # Results are frozen, so combine messages into a new Set rather than merging in place.
             errors.merge!(error.fact_bad_inputs) do |_bad_input_key_path, old_error_messages, new_error_messages|
-              old_error_messages.merge(new_error_messages)
+              old_error_messages | new_error_messages
             end
           end
         end

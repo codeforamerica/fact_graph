@@ -217,6 +217,23 @@ RSpec.describe FactGraph::Evaluator do
     let!(:evaluation_results) { described_class.evaluate(input, graph_class: MathGraph) }
     let(:results) { FactGraph::Evaluator.input_errors(evaluation_results) }
 
+    context "when two facts report errors for the same input" do
+      let(:input) { {} }
+      let(:graph_class) do
+        Class.new(FactGraph::Graph) do
+          in_module :shared_input do
+            fact(:as_integer) { input :scale, value: :integer }
+            fact(:as_string) { input :scale, value: :string }
+          end
+        end
+      end
+
+      it "combines their messages" do
+        results = described_class.evaluate(input, graph_class:)
+        expect(described_class.input_errors(results)).to eq({[:scale] => Set["must be an integer", "must be a string"]})
+      end
+    end
+
     context "when you evaluate with no input" do
       let(:input) { {} }
 
