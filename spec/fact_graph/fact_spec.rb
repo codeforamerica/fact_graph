@@ -2,12 +2,11 @@
 
 RSpec.describe FactGraph::Fact do
   before do
-    FactGraph::Graph.graph_registry = []
     load "spec/fixtures/contact_info.rb"
   end
 
   describe "#call" do
-    let(:graph) { FactGraph::Graph.prepare_fact_objects(input) }
+    let(:graph) { ContactInfo.prepare_fact_objects(input) }
 
     context "when called with structured input that contains more fields than are required by a fact" do
       let(:input) do
@@ -102,7 +101,7 @@ RSpec.describe FactGraph::Fact do
   end
 
   describe "nested input facts" do
-    let(:graph) { FactGraph::Graph.prepare_fact_objects(input) }
+    let(:graph) { ContactInfo.prepare_fact_objects(input) }
     let(:input) do
       {
         snail_mail_opt_in: false,
@@ -140,53 +139,53 @@ RSpec.describe FactGraph::Fact do
   end
 
   describe "missing resolver detection" do
-    before { FactGraph::Graph.graph_registry = [] }
+    let(:graph_class) { Class.new(FactGraph::Graph) }
 
     it "raises when a fact has a dependency but no resolver" do
-      Class.new(FactGraph::Graph) do
+      graph_class.class_eval do
         fact :no_resolver do
           dependency :something_else
         end
       end
       expect {
-        FactGraph::Graph.prepare_fact_objects({})
+        graph_class.prepare_fact_objects({})
       }.to raise_error(/has inputs or dependencies but no callable resolver/)
     end
 
     it "raises when a fact has multiple inputs but no resolver" do
-      Class.new(FactGraph::Graph) do
+      graph_class.class_eval do
         fact :two_inputs do
           input :a, value: :integer
           input :b, value: :integer
         end
       end
       expect {
-        FactGraph::Graph.prepare_fact_objects({})
+        graph_class.prepare_fact_objects({})
       }.to raise_error(/has inputs or dependencies but no callable resolver/)
     end
 
     it "does not raise for a single-input pass-through fact" do
-      Class.new(FactGraph::Graph) do
+      graph_class.class_eval do
         fact :one_input do
           input :a, value: :integer
         end
       end
       expect {
-        FactGraph::Graph.prepare_fact_objects({})
+        graph_class.prepare_fact_objects({})
       }.not_to raise_error
     end
   end
 
   describe "null fact detection" do
-    before { FactGraph::Graph.graph_registry = [] }
+    let(:graph_class) { Class.new(FactGraph::Graph) }
 
     def evaluate_single_fact(module_name, fact_name, input = {})
-      graph = FactGraph::Graph.prepare_fact_objects(input)
+      graph = graph_class.prepare_fact_objects(input)
       graph[module_name][fact_name].call(input, {})
     end
 
     it "raises when a resolver proc returns nil" do
-      Class.new(FactGraph::Graph) do
+      graph_class.class_eval do
         in_module :leaks do
           fact :leaky do
             proc { nil }
@@ -198,7 +197,7 @@ RSpec.describe FactGraph::Fact do
     end
 
     it "raises when a fact has a non-callable nil resolver" do
-      Class.new(FactGraph::Graph) do
+      graph_class.class_eval do
         in_module :leaks do
           fact :nil_constant do
             nil
@@ -210,7 +209,7 @@ RSpec.describe FactGraph::Fact do
     end
 
     it "raises when an allow_unmet_dependencies fact returns nil on its unmet path" do
-      Class.new(FactGraph::Graph) do
+      graph_class.class_eval do
         in_module :leaks do
           fact :missing_input do
             input :missing_input, value: :integer
@@ -226,7 +225,7 @@ RSpec.describe FactGraph::Fact do
     end
 
     it "raises when an input fact passes through a nil value" do
-      Class.new(FactGraph::Graph) do
+      graph_class.class_eval do
         in_module :leaks do
           fact :optional do
             input [:wrapper, :optional]
@@ -238,19 +237,19 @@ RSpec.describe FactGraph::Fact do
     end
 
     it "names the entity for a per-entity fact that returns nil" do
-      Class.new(FactGraph::Graph) do
+      graph_class.class_eval do
         in_module :leaks do
           fact :leaky, per_entity: :items do
             proc { nil }
           end
         end
       end
-      expect { FactGraph::Evaluator.evaluate({items: [{}]}) }
+      expect { FactGraph::Evaluator.evaluate({items: [{}]}, graph_class:) }
         .to raise_error(FactGraph::NullFactError, /:leaks\/:leaky \(entity 0\)/)
     end
 
     it "does not raise when a fact resolves to false" do
-      Class.new(FactGraph::Graph) do
+      graph_class.class_eval do
         in_module :ok do
           fact :falsey do
             proc { false }
@@ -263,9 +262,10 @@ RSpec.describe FactGraph::Fact do
   end
 
   describe "short-form input with no value predicates" do
+    let(:graph_class) { Class.new(FactGraph::Graph) }
+
     before do
-      FactGraph::Graph.graph_registry = []
-      Class.new(FactGraph::Graph) do
+      graph_class.class_eval do
         in_module :unvalidated_facts do
           fact :anything do
             input [:wrapper, :anything]
@@ -276,7 +276,7 @@ RSpec.describe FactGraph::Fact do
 
     it "requires the key but accepts any value" do
       input = {wrapper: {anything: "some string"}}
-      graph = FactGraph::Graph.prepare_fact_objects(input)
+      graph = graph_class.prepare_fact_objects(input)
       results = {}
       graph[:unvalidated_facts][:anything].call(input, results)
       expect(results[:unvalidated_facts][:anything]).to eq "some string"
@@ -284,7 +284,7 @@ RSpec.describe FactGraph::Fact do
 
     it "flags a validation error when the required key is missing" do
       input = {wrapper: {}}
-      graph = FactGraph::Graph.prepare_fact_objects(input)
+      graph = graph_class.prepare_fact_objects(input)
       results = {}
       graph[:unvalidated_facts][:anything].call(input, results)
       expect(results[:unvalidated_facts][:anything]).to have_attributes(

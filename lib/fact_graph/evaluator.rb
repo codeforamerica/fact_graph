@@ -13,8 +13,7 @@ class FactGraph::Evaluator
       end
     end
 
-    def evaluate(input, graph_class: nil, module_filter: nil)
-      graph_class ||= FactGraph::Graph
+    def evaluate(input, graph_class:, module_filter: nil)
       graph = graph_class.prepare_fact_objects(input, module_filter)
       results = graph.transform_values { |_| {} }
       graph.each do |module_name, module_hash|
@@ -49,8 +48,7 @@ class FactGraph::Evaluator
       end
     end
 
-    def facts_using_input(query_input, graph_class: nil, module_filter: nil)
-      graph_class ||= FactGraph::Graph
+    def facts_using_input(query_input, graph_class:, module_filter: nil)
       graph = graph_class.prepare_fact_objects(module_filter)
       graph.flat_map do |_, facts|
         facts.select do |_, fact|
@@ -62,8 +60,7 @@ class FactGraph::Evaluator
       end
     end
 
-    def facts_with_dependency(query_module_name, query_fact_name, graph_class: nil, module_filter: nil)
-      graph_class ||= FactGraph::Graph
+    def facts_with_dependency(query_module_name, query_fact_name, graph_class:, module_filter: nil)
       graph = graph_class.prepare_fact_objects(module_filter)
       graph.flat_map do |_, facts|
         facts.select do |_, fact|
@@ -73,12 +70,12 @@ class FactGraph::Evaluator
     end
 
     # consider marking facts used for output explicitly, rather than assuming (incorrectly) that leaf nodes = output
-    def leaf_facts_depending_on_input(query_input)
-      candidate_facts = facts_using_input(query_input)
+    def leaf_facts_depending_on_input(query_input, graph_class:)
+      candidate_facts = facts_using_input(query_input, graph_class:)
       leaf_facts = Set.new
       while candidate_facts.count.positive?
         candidate_fact = candidate_facts.shift
-        facts_depending_on_candidate = facts_with_dependency(candidate_fact.module_name, candidate_fact.name)
+        facts_depending_on_candidate = facts_with_dependency(candidate_fact.module_name, candidate_fact.name, graph_class:)
         if facts_depending_on_candidate.count.zero?
           leaf_facts << candidate_fact
         else

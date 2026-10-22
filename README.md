@@ -31,7 +31,7 @@ It is also the natural choice for structuring composable fact mixins in your own
 | Term | Meaning |
 |---|---|
 | **Fact** | A named value: a constant, a value derived from input, or a value derived from other facts |
-| **Graph** | A subclass of `FactGraph::Graph` that holds a set of fact definitions |
+| **Graph** | A subclass of `FactGraph::Graph`; its own fact definitions plus those it inherits are evaluated together |
 | **Module** | A logical grouping of facts within a graph; auto-derived from the class name or set explicitly with `in_module` |
 | **Entity fact** | A fact evaluated once per entity in a collection (e.g., once per applicant) |
 | **Aggregate fact** | A non-entity fact that can depend on entity facts; receives a `{entity_id => value}` hash |
@@ -102,29 +102,31 @@ If a fact has inputs or dependencies but no callable resolver (you forgot the `p
 Declare dependencies on other facts with `dependency`. Use `from:` to reference a fact in another module:
 
 ```ruby
-class CircleFacts < FactGraph::Graph
-  fact :areas do
-    input :circles do
-      required(:circles).array(:hash) do
-        required(:radius).value(:integer)
+class MathFacts < FactGraph::Graph
+  in_module :circle_facts do
+    fact :areas do
+      input :circles do
+        required(:circles).array(:hash) do
+          required(:radius).value(:integer)
+        end
       end
-    end
 
-    dependency :pi, from: :math_facts
-    dependency :squared_scale, from: :math_facts
+      dependency :pi, from: :math_facts
+      dependency :squared_scale, from: :math_facts
 
-    proc do
-      data in input: { circles: }, dependencies: { pi:, squared_scale: }
-      circles.map do |circle|
-        circle in radius:
-        pi * radius * radius * squared_scale
+      proc do
+        data in input: { circles: }, dependencies: { pi:, squared_scale: }
+        circles.map do |circle|
+          circle in radius:
+          pi * radius * radius * squared_scale
+        end
       end
     end
   end
 end
 ```
 
-If `from:` is omitted, the dependency is assumed to be in the same module.
+If `from:` is omitted, the dependency is assumed to be in the same module. Dependencies resolve only within the graph being evaluated.
 
 ### Entity facts
 
@@ -207,13 +209,13 @@ end
 
 ## Evaluating facts
 
-Call `FactGraph::Evaluator.evaluate` with an input hash:
+Call `FactGraph::Evaluator.evaluate` with an input hash and the graph to evaluate:
 
 ```ruby
 results = FactGraph::Evaluator.evaluate({
   scale: 3,
   circles: [{ radius: 5 }, { radius: 10 }]
-})
+}, graph_class: MathFacts)
 ```
 
 Results are a nested hash keyed by module name, then fact name:
@@ -258,7 +260,7 @@ Use `FactGraph::Evaluator.input_errors(results)` to collect all `fact_bad_inputs
 
 ## Context-specific graphs
 
-Use `ActiveSupport::Concern` mixins and graph subclasses to compose graphs for different contexts:
+Use `ActiveSupport::Concern` mixins to share facts between graphs, and subclassing to build one graph on top of another:
 
 ```ruby
 # Define shared fact groups as mixins
@@ -282,16 +284,29 @@ module Filer
   end
 end
 
-# Define a base graph class per context
-class Ty2024Graph < FactGraph::Graph; end
-
-# Include the mixins and add context-specific constants
-class TaxYear2024Specifics < Ty2024Graph
+# A base graph holds the facts and default policy every year shares
+class TaxYearGraph < FactGraph::Graph
   include Filer
   include Dependent
 
   in_module :filing_context do
+    constant(:max_dependents) { 4 }
+  end
+end
+
+# Each year subclasses the base directly. Defining a fact with the same module
+# and name as an inherited one replaces it; the base and sibling years are
+# unaffected.
+class Ty2024Graph < TaxYearGraph
+  in_module :filing_context do
     constant(:tax_year) { 2024 }
+  end
+end
+
+class Ty2025Graph < TaxYearGraph
+  in_module :filing_context do
+    constant(:tax_year) { 2025 }
+    constant(:max_dependents) { 6 }
   end
 end
 ```
@@ -308,16 +323,16 @@ These methods let you inspect the fact graph without evaluating it:
 
 ```ruby
 # Find facts that use a specific input key path
-FactGraph::Evaluator.facts_using_input([:circles, 0, :radius])
+FactGraph::Evaluator.facts_using_input([:circles, 0, :radius], graph_class: MathFacts)
 
 # Find facts that depend on a specific fact
-FactGraph::Evaluator.facts_with_dependency(:math_facts, :pi)
+FactGraph::Evaluator.facts_with_dependency(:math_facts, :pi, graph_class: MathFacts)
 
 # Trace which leaf (output) facts ultimately depend on a given input
-FactGraph::Evaluator.leaf_facts_depending_on_input([:income])
+FactGraph::Evaluator.leaf_facts_depending_on_input([:income], graph_class: ApplicantFacts)
 ```
 
-All three accept optional `graph_class:` and `module_filter:` keyword arguments.
+All three require `graph_class:`; the first two also accept `module_filter:`.
 
 ## Development
 

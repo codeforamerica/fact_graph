@@ -2,7 +2,6 @@
 
 RSpec.describe FactGraph::Evaluator do
   before do
-    FactGraph::Graph.graph_registry = []
     load "spec/fixtures/math.rb"
   end
 
@@ -29,7 +28,7 @@ RSpec.describe FactGraph::Evaluator do
   end
 
   describe "#facts_using_input" do
-    let(:results) { described_class.facts_using_input(query_input) }
+    let(:results) { described_class.facts_using_input(query_input, graph_class: MathGraph) }
 
     context "when you query for an unused input" do
       let(:query_input) { [:foo] }
@@ -71,7 +70,7 @@ RSpec.describe FactGraph::Evaluator do
   end
 
   describe "#facts_with_dependency" do
-    let(:results) { described_class.facts_with_dependency(query_dependency_module_name, query_dependency_fact_name) }
+    let(:results) { described_class.facts_with_dependency(query_dependency_module_name, query_dependency_fact_name, graph_class: MathGraph) }
 
     context "when you query for a nonexistent module" do
       let(:query_dependency_module_name) { :foo }
@@ -113,7 +112,7 @@ RSpec.describe FactGraph::Evaluator do
   end
 
   describe "#leaf_facts_depending_on_input" do
-    let(:results) { described_class.leaf_facts_depending_on_input(query_input) }
+    let(:results) { described_class.leaf_facts_depending_on_input(query_input, graph_class: MathGraph) }
 
     context "when you query for an unused input" do
       let(:query_input) { [:foo] }
@@ -147,7 +146,7 @@ RSpec.describe FactGraph::Evaluator do
   describe ".evaluate" do
     context "deep freezes results" do
       let(:input) { {scale: 5, circles: [{radius: 1}, {radius: 2}]} }
-      let(:results) { described_class.evaluate(input) }
+      let(:results) { described_class.evaluate(input, graph_class: MathGraph) }
 
       it "freezes the top-level hash and all nested module hashes" do
         expect(results).to be_frozen
@@ -163,7 +162,7 @@ RSpec.describe FactGraph::Evaluator do
       end
 
       it "freezes error result hashes deeply" do
-        error_results = described_class.evaluate({})
+        error_results = described_class.evaluate({}, graph_class: MathGraph)
         error = error_results[:math_facts][:squared_scale]
         expect(error).to be_frozen
         expect(error[:fact_bad_inputs]).to be_frozen
@@ -171,7 +170,7 @@ RSpec.describe FactGraph::Evaluator do
       end
 
       it "freezes sets and their elements within error results" do
-        error_results = described_class.evaluate({})
+        error_results = described_class.evaluate({}, graph_class: MathGraph)
         error_messages = error_results[:math_facts][:squared_scale][:fact_bad_inputs][[:scale]]
         expect(error_messages).to be_a(Set)
         expect(error_messages).to be_frozen
@@ -181,7 +180,7 @@ RSpec.describe FactGraph::Evaluator do
   end
 
   describe ".input_errors" do
-    let!(:evaluation_results) { described_class.evaluate(input) }
+    let!(:evaluation_results) { described_class.evaluate(input, graph_class: MathGraph) }
     let(:results) { FactGraph::Evaluator.input_errors(evaluation_results) }
 
     context "when you evaluate with no input" do
