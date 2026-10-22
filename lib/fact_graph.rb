@@ -66,6 +66,14 @@ module FactGraph
         end
       end
 
+      # One Fact per definition, for inspecting the graph's structure without any input.
+      # A per-entity fact appears once, with no entity ID.
+      def fact_objects(module_filter = nil)
+        filter_graph(module_filter).map do |fact_kwargs|
+          FactGraph::Fact.new(graph: {}, **fact_kwargs.except(:entity_id))
+        end
+      end
+
       def prepare_fact_objects(input, module_filter = nil)
         graph = {}
         filter_graph(module_filter).map do |fact_kwargs|
