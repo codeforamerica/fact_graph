@@ -3,28 +3,41 @@ require "dry/schema"
 class FactGraph::Fact
   attr_accessor :name, :module_name, :resolver, :dependencies, :input_definitions, :graph, :per_entity, :entity_id, :allow_unmet_dependencies
 
+  # Compiled definitions, keyed by definition block. Running a block builds its inputs' dry-schema
+  # validators, which dominated evaluation time, and nothing a block declares depends on the
+  # input being evaluated, so each block runs once. A block must not read the fact's entity_id.
+  COMPILED = {}.compare_by_identity
+  COMPILED_LOCK = Mutex.new
+
   def initialize(name:, module_name:, graph:, def_proc:, per_entity: nil, entity_id: nil, allow_unmet_dependencies: false)
     @name = name
     @module_name = module_name
-    @dependencies = {}
-    @input_definitions = {}
     @graph = graph
     @per_entity = per_entity
     @entity_id = entity_id
     @allow_unmet_dependencies = allow_unmet_dependencies
 
-    @resolver = instance_eval(&def_proc)
+    compiled = COMPILED[def_proc] || COMPILED_LOCK.synchronize { COMPILED[def_proc] ||= compile(def_proc) }
+    @resolver, @input_definitions, @dependencies = compiled.values_at(:resolver, :input_definitions, :dependencies)
+  end
+
+  private def compile(def_proc)
+    @dependencies = {}
+    @input_definitions = {}
+    resolver = instance_eval(&def_proc)
 
     # In the common case of an "input fact" - with only a single input definition and no dependencies or proc/value -
     #   create a proc that passes through the single input.
-    if @resolver.nil? && @input_definitions.size == 1 && @dependencies.empty?
+    if resolver.nil? && @input_definitions.size == 1 && @dependencies.empty?
       keypath = @input_definitions.values.first[:keypath]
-      @resolver = proc { data.dig(:input, *keypath) }
-    elsif (@input_definitions.any? || @dependencies.any?) && !@resolver.respond_to?(:call)
+      resolver = proc { data.dig(:input, *keypath) }
+    elsif (@input_definitions.any? || @dependencies.any?) && !resolver.respond_to?(:call)
       raise "Fact :#{@module_name}/:#{@name} has inputs or dependencies but no callable resolver. " \
             "Add a `proc do ... end` body, or use single-input pass-through " \
             "(exactly one `input`, no `dependency`, no `proc`)."
     end
+
+    {resolver:, input_definitions: @input_definitions.freeze, dependencies: @dependencies.freeze}
   end
 
   def dependency(fact, from: nil)
