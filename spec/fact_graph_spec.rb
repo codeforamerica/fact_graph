@@ -5,11 +5,8 @@ RSpec.describe FactGraph do
     expect(FactGraph::VERSION).not_to be nil
   end
 
-  let(:results) { FactGraph::Evaluator.evaluate(input) }
-
-  before do
-    FactGraph::Graph.graph_registry = []
-  end
+  let(:graph_class) { Class.new(FactGraph::Graph) }
+  let(:results) { FactGraph::Evaluator.evaluate(input, graph_class:) }
 
   context "with no facts defined" do
     context "with no input" do
@@ -34,28 +31,30 @@ RSpec.describe FactGraph do
       load "spec/fixtures/math.rb"
     end
 
+    let(:graph_class) { MathGraph }
+
     context "with no input" do
       let(:input) { {} }
       let(:expected_result) do
         {
           math_facts: {
             pi: 3.14,
-            squared_scale: {
+            squared_scale: FactGraph::Error.new(
               fact_bad_inputs: {
                 [:scale] => Set.new(["must be Numeric"])
               },
               fact_dependency_unmet: {}
-            }
+            )
           },
           circle_facts: {
-            areas: {
+            areas: FactGraph::Error.new(
               fact_bad_inputs: {
                 [:circles] => Set.new(["must be an array"])
               },
               fact_dependency_unmet: {
                 math_facts: [:squared_scale]
               }
-            }
+            )
           },
           simple_facts: {
             two: 2
@@ -74,22 +73,22 @@ RSpec.describe FactGraph do
         {
           math_facts: {
             pi: 3.14,
-            squared_scale: {
+            squared_scale: FactGraph::Error.new(
               fact_bad_inputs: {
                 [:scale] => Set.new(["must be Numeric"])
               },
               fact_dependency_unmet: {}
-            }
+            )
           },
           circle_facts: {
-            areas: {
+            areas: FactGraph::Error.new(
               fact_bad_inputs: {
                 [:circles] => Set.new(["must be an array"])
               },
               fact_dependency_unmet: {
                 math_facts: [:squared_scale]
               }
-            }
+            )
           },
           simple_facts: {
             two: 2
@@ -111,12 +110,12 @@ RSpec.describe FactGraph do
             squared_scale: 25
           },
           circle_facts: {
-            areas: {
+            areas: FactGraph::Error.new(
               fact_bad_inputs: {
                 [:circles] => Set.new(["must be an array"])
               },
               fact_dependency_unmet: {}
-            }
+            )
           },
           simple_facts: {
             two: 2
@@ -138,13 +137,13 @@ RSpec.describe FactGraph do
             squared_scale: 25
           },
           circle_facts: {
-            areas: {
+            areas: FactGraph::Error.new(
               fact_bad_inputs: {
                 [:circles, 0, :radius] => Set.new(["must be an integer"]),
                 [:circles, 1, :radius] => Set.new(["is missing"])
               },
               fact_dependency_unmet: {}
-            }
+            )
           },
           simple_facts: {
             two: 2

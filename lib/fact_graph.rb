@@ -1,9 +1,12 @@
 # frozen_string_literal: true
 
 require "active_support/core_ext/string"
+require "active_support/core_ext/object/blank"
+require "active_support/core_ext/class/attribute"
 
 require_relative "fact_graph/data_container"
 require_relative "fact_graph/evaluator"
+require_relative "fact_graph/error"
 require_relative "fact_graph/fact"
 require_relative "fact_graph/version"
 
@@ -14,28 +17,33 @@ module FactGraph
   # error hash — nil leaves dependents unable to tell "missing" from "satisfied".
   class NullFactError < StandardError; end
 
+  # Raised when a fact is defined on a graph that already has subclasses, which
+  # wouldn't see it. Graphs are meant to be fully defined at class load time.
+  class FactDefinitionsLockedError < StandardError; end
+
+  # A graph is a class whose facts (its own plus those it inherits) are
+  # evaluated together. Compose graphs by including fact mixins and by
+  # subclassing: a subclass sees all of its parent's facts, and a fact it
+  # defines replaces any inherited fact with the same module and name.
   class Graph
-    @graph_registry = []
+    class_attribute :fact_definitions, instance_accessor: false, default: {}.freeze
 
     class << self
-      attr_accessor :graph_registry
-
       def module_name = @module_name || to_s.underscore.split("/").last.to_sym
 
-      def inherited(subclass)
-        super
-        subclass.graph_registry = []
-      end
+      def graph_registry = fact_definitions.values
 
       def in_module(module_name, &blk)
         previous_module = @module_name
         @module_name = module_name
         yield
+      ensure
         @module_name = previous_module
       end
 
       def fact(name, **kwargs, &def_proc)
-        superclass.graph_registry << {module_name:, name:, def_proc:, **kwargs}
+        raise FactDefinitionsLockedError, "can't define #{module_name}/#{name} on #{self}: it already has subclasses" if subclasses.present?
+        self.fact_definitions = fact_definitions.merge({[module_name, name] => {module_name:, name:, def_proc:, **kwargs}}).freeze
       end
       alias_method :constant, :fact
 
