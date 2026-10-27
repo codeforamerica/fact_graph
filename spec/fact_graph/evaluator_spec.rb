@@ -7,40 +7,40 @@ RSpec.describe FactGraph::Evaluator do
 
   describe "#evaluate_constant" do
     it "returns the value of a constant fact" do
-      expect(described_class.evaluate_constant(:pi)).to eq 3.14
-      expect(described_class.evaluate_constant(:two)).to eq 2
+      expect(described_class.evaluate_constant(:pi, graph_class: MathGraph)).to eq 3.14
+      expect(described_class.evaluate_constant(:two, graph_class: MathGraph)).to eq 2
     end
 
     it "does not build or evaluate the rest of the graph" do
-      expect(FactGraph::Graph).not_to receive(:prepare_fact_objects)
-      described_class.evaluate_constant(:pi)
+      expect(MathGraph).not_to receive(:prepare_fact_objects)
+      described_class.evaluate_constant(:pi, graph_class: MathGraph)
     end
 
     it "raises when no fact has the given name" do
-      expect { described_class.evaluate_constant(:nope) }
+      expect { described_class.evaluate_constant(:nope, graph_class: MathGraph) }
         .to raise_error(ArgumentError, /No fact named :nope/)
     end
 
     it "raises when the fact has inputs or dependencies" do
-      expect { described_class.evaluate_constant(:squared_scale) }
+      expect { described_class.evaluate_constant(:squared_scale, graph_class: MathGraph) }
         .to raise_error(ArgumentError, /is not a constant/)
     end
 
     context "when the same constant name exists in multiple modules" do
-      before do
-        Class.new(FactGraph::Graph) do
+      let(:graph_class) do
+        Class.new(MathGraph) do
           in_module(:other) { constant(:pi) { 3 } }
         end
       end
 
       it "raises unless a module_filter disambiguates" do
-        expect { described_class.evaluate_constant(:pi) }
+        expect { described_class.evaluate_constant(:pi, graph_class:) }
           .to raise_error(ArgumentError, /Ambiguous constant :pi/)
       end
 
       it "returns the matching module's value when filtered" do
-        expect(described_class.evaluate_constant(:pi, module_filter: [:math_facts])).to eq 3.14
-        expect(described_class.evaluate_constant(:pi, module_filter: [:other])).to eq 3
+        expect(described_class.evaluate_constant(:pi, graph_class:, module_filter: [:math_facts])).to eq 3.14
+        expect(described_class.evaluate_constant(:pi, graph_class:, module_filter: [:other])).to eq 3
       end
     end
   end

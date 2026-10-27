@@ -26,8 +26,7 @@ class FactGraph::Evaluator
 
     # Read a single constant fact's value without building or evaluating the rest of the graph.
     # A constant is a fact with no inputs and no dependencies (`constant(:name) { value }`).
-    def evaluate_constant(name, graph_class: nil, module_filter: nil)
-      graph_class ||= FactGraph::Graph
+    def evaluate_constant(name, graph_class:, module_filter: nil)
       matches = graph_class.filter_graph(module_filter).select { |fact_kwargs| fact_kwargs[:name] == name }
 
       raise ArgumentError, "No fact named :#{name}" if matches.empty?
