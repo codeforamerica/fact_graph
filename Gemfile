@@ -14,3 +14,7 @@ gem "standard", ">= 1.35.1"
 
 # Necessary for debugging in RubyMine
 gem "mutex_m"
+
+group :development, :test do
+  gem "ruby_audit", require: false
+end
