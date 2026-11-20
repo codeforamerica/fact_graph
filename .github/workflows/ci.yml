@@ -1,4 +1,4 @@
-name: Ruby Audit
+name: CI
 
 on:
   push:
@@ -13,6 +13,19 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Reads the version from .ruby-version.
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Run rubocop
+        run: bundle exec rubocop
+
   ruby-audit:
     runs-on: ubuntu-latest
     steps:
