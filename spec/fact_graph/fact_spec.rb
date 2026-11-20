@@ -188,7 +188,7 @@ RSpec.describe FactGraph::Fact do
       graph_class.class_eval do
         in_module :leaks do
           fact :leaky do
-            proc { nil }
+            proc {}
           end
         end
       end
@@ -216,7 +216,7 @@ RSpec.describe FactGraph::Fact do
           end
           fact :leaky, allow_unmet_dependencies: true do
             dependency :missing_input
-            proc { nil }
+            proc {}
           end
         end
       end
@@ -240,7 +240,7 @@ RSpec.describe FactGraph::Fact do
       graph_class.class_eval do
         in_module :leaks do
           fact :leaky, per_entity: :items do
-            proc { nil }
+            proc {}
           end
         end
       end
